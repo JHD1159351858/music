@@ -2,43 +2,13 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 
 import { IframeSdkProvider } from '@/components/iframe-sdk-provider';
+import { UserProvider } from '@/lib/user-context';
 
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: {
-    default: '新应用 | Coder 编程',
-    template: '%s | Coder 编程',
-  },
-  description:
-    'Coder 编程是一款一站式云端 Vibe Coding 开发平台。通过对话轻松构建智能体、工作流和网站，实现从创意到上线的无缝衔接。',
-  keywords: [
-    'Coder 编程',
-    'Coder Code',
-    'Vibe Coding',
-    'AI 编程',
-    '智能体搭建',
-    '工作流搭建',
-    '网站搭建',
-    '网站部署',
-    '全栈开发',
-    'AI 工程师',
-  ],
-  authors: [{ name: 'Coder Code Team', url: 'https://code.coder.cn' }],
-  generator: 'Coder Code',
-  openGraph: {
-    title: 'Coder 编程 | 你的 AI 工程师已就位',
-    description:
-      '我正在使用 Coder 编程 Vibe Coding，让创意瞬间上线。告别拖拽，拥抱心流。',
-    url: 'https://code.coder.cn',
-    siteName: 'Coder 编程',
-    locale: 'zh_CN',
-    type: 'website',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  title: '知音 · 教学智能体',
+  description: '练琴记录、乐谱分析、练琴社区、音乐史地图与练琴数据分析一体化教学智能体',
 };
 
 export default function RootLayout({
@@ -47,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" className="dark">
       <body className={`antialiased`}>
         {/**
           iframe-route-sync：子页面路由 ↔ 父页面地址双向同步
@@ -81,7 +51,9 @@ export default function RootLayout({
             __html: `window.__errorBridge = window.IframeErrorSync && window.IframeErrorSync.child.create({ debug: false, reporters: 'auto' }).init();`,
           }}
         />
-        <IframeSdkProvider>{children}</IframeSdkProvider>
+        <IframeSdkProvider>
+          <UserProvider>{children}</UserProvider>
+        </IframeSdkProvider>
       </body>
     </html>
   );

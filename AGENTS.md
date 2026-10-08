@@ -1,5 +1,21 @@
 # 项目上下文
 
+「知音」教学智能体：面向音乐教学场景的全栈应用（学生/教师双角色，演示模式选身份进入，无真实登录）。
+
+## 五大板块与代码位置
+- 练琴记录：`src/app/(app)/practice/`（列表页 + `session/[id]/` 沉浸练习页：计时 + MediaRecorder 录音 + 结束存档）
+- 乐谱分析：`src/app/(app)/analysis/` + `src/app/api/analysis/route.ts`（LLM 视觉识别图片 / MusicXML·ABC 文本 → 结构化 JSON 指标）
+- 练琴社区：`src/app/(app)/community/` + `/api/posts`、`/api/comments`、`/api/posts/[id]/like`
+- 音乐史地图：`src/app/(app)/map/` + `src/lib/composers.ts`（中西作曲家史实数据，头像在 `public/avatars/`）
+- 数据分析：`src/app/(app)/stats/` + `/api/stats`（教师端聚合统计）
+
+## 关键约定
+- 身份：localStorage 存演示身份（`src/lib/user-context.tsx`），昵称制不存真实姓名
+- 数据：Supabase（PolarDB 多租户），schema 在 `src/db/schema.ts`，迁移在 `drizzle/`；业务 CRUD 一律走 `/api/*` + `createSupabaseServer()`（`src/lib/supabase-server.ts`）
+- LLM：`coder-coding-dev-sdk` LLMClient，对话统一走 `/api/chat`（SSE 流式），前端用 `src/components/chat-panel.tsx`（Reader 逐块渲染）
+- 文件：录音/谱图上传走 `/api/upload`（StorageClient 对象存储，存 fileId）
+- 设计：深色音乐厅风格，规则见 `DESIGN.md`；只用语义主题变量，禁硬编码颜色
+
 ### 版本技术栈
 
 - **Framework**: Next.js 16 (App Router)
