@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Play, Plus, Search, Trash2, Clock, Music4, Pencil } from 'lucide-react'
+import { Play, Plus, Search, Trash2, Clock, Music4, Pencil, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Score {
@@ -72,7 +72,8 @@ export default function PracticePage() {
   const [difficulty, setDifficulty] = useState('all')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Score | null>(null)
-  const [form, setForm] = useState({ title: '', composer: '', difficulty: 'beginner', tips: '' })
+  const [form, setForm] = useState({ title: '', composer: '', difficulty: 'beginner', tips: '', image_url: '' })
+  const [uploading, setUploading] = useState(false)
   const [enteringId, setEnteringId] = useState<string | null>(null)
 
   const isTeacher = user?.role === 'teacher'
@@ -109,6 +110,7 @@ export default function PracticePage() {
     if (!user) return
     const payload = {
       ...form,
+      image_url: form.image_url || null,
       source: isTeacher ? 'teacher' : 'student',
       owner_id: user.id,
     }
@@ -130,8 +132,29 @@ export default function PracticePage() {
     toast.success(editing ? '已更新琴谱' : '已添加琴谱')
     setDialogOpen(false)
     setEditing(null)
-    setForm({ title: '', composer: '', difficulty: 'beginner', tips: '' })
+    setForm({ title: '', composer: '', difficulty: 'beginner', tips: '', image_url: '' })
     load()
+  }
+
+  const uploadImage = async (file: File) => {
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error('图片不能超过 8MB')
+      return
+    }
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      if (!res.ok) throw new Error()
+      const { url } = await res.json()
+      setForm((f) => ({ ...f, image_url: url }))
+      toast.success('谱面图片已上传')
+    } catch {
+      toast.error('图片上传失败')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const removeScore = async (id: string) => {
@@ -238,6 +261,37 @@ export default function PracticePage() {
                     <Label>教学要点（可选）</Label>
                     <Textarea value={form.tips} onChange={(e) => setForm({ ...form, tips: e.target.value })} rows={3} />
                   </div>
+                  <div className="space-y-2">
+                    <Label>谱面图片（可选）</Label>
+                    {form.image_url ? (
+                      <div className="relative">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={form.image_url} alt="谱面预览" className="max-h-40 w-full rounded-lg border border-border object-cover" />
+                        <button
+                          onClick={() => setForm({ ...form, image_url: '' })}
+                          className="absolute right-2 top-2 rounded-full bg-background/80 px-2 py-0.5 text-xs text-muted-foreground hover:text-destructive"
+                        >
+                          移除
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border px-4 py-6 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground">
+                        <Upload className="mb-2 h-5 w-5 text-primary/60" />
+                        {uploading ? '上传中…' : '点击上传谱面图片'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={uploading}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0]
+                            if (f) uploadImage(f)
+                            e.target.value = ''
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
                   <Button className="w-full" onClick={submitScore} disabled={!form.title || !form.composer}>
                     保存
                   </Button>
@@ -262,7 +316,7 @@ export default function PracticePage() {
                     <button
                       onClick={() => {
                         setEditing(s)
-                        setForm({ title: s.title, composer: s.composer, difficulty: s.difficulty, tips: s.tips ?? '' })
+                        setForm({ title: s.title, composer: s.composer, difficulty: s.difficulty, tips: s.tips ?? '', image_url: s.image_url ?? '' })
                         setDialogOpen(true)
                       }}
                       className="rounded p-1 text-muted-foreground hover:text-foreground"
@@ -277,6 +331,10 @@ export default function PracticePage() {
               </div>
               <h3 className="mt-3 font-serif text-lg font-semibold text-foreground">{s.title}</h3>
               <p className="text-sm text-muted-foreground">{s.composer}</p>
+              {s.image_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={s.image_url} alt={s.title} className="mt-3 h-28 w-full rounded-lg border border-border object-cover" />
+              )}
               {s.tips && <p className="mt-2 line-clamp-2 text-xs text-muted-foreground/80">{s.tips}</p>}
               {!isTeacher && (
                 <Button

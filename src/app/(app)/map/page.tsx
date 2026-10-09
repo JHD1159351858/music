@@ -108,16 +108,14 @@ export default function MusicMapPage() {
         {/* 地图 */}
         <div className="lg:col-span-6">
           <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-border bg-card sm:aspect-square">
-            {/* 装饰网格与光晕 */}
-            <div
-              aria-hidden
-              className="absolute inset-0 opacity-[0.05]"
-              style={{
-                backgroundImage:
-                  'linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)',
-                backgroundSize: '40px 40px',
-              }}
+            {/* 地图底图 */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={map === 'china' ? '/maps/china.png' : '/maps/europe.png'}
+              alt={map === 'china' ? '中国地图' : '欧洲地图'}
+              className="absolute inset-0 h-full w-full object-cover opacity-70"
             />
+            {/* 光晕 */}
             <div aria-hidden className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-3xl" />
 
             <div className="absolute left-4 top-4 z-10 rounded-lg bg-background/70 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur">
