@@ -271,6 +271,7 @@ function FloatingScore({ title, imageUrl }: { title: string; imageUrl: string })
   const [open, setOpen] = useState(true)
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
+  const [halfScreen, setHalfScreen] = useState(false)
   // 窗口拖动状态
   const winDragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null)
   // 谱面平移状态
@@ -282,6 +283,7 @@ function FloatingScore({ title, imageUrl }: { title: string; imageUrl: string })
 
   // ---- 窗口拖动（标题栏） ----
   const onWinPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (halfScreen) return
     winDragRef.current = { startX: e.clientX, startY: e.clientY, baseX: pos.x, baseY: pos.y }
     e.currentTarget.setPointerCapture(e.pointerId)
   }
@@ -311,9 +313,9 @@ function FloatingScore({ title, imageUrl }: { title: string; imageUrl: string })
     setPanning(false)
   }
 
-  const resetView = () => {
-    setZoom(1)
-    setPan({ x: 0, y: 0 })
+  const toggleHalfScreen = () => {
+    setHalfScreen((v) => !v)
+    setPos({ x: 0, y: 0 })
   }
 
   if (!open) {
@@ -331,8 +333,12 @@ function FloatingScore({ title, imageUrl }: { title: string; imageUrl: string })
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-[60] flex h-[70vh] w-[min(90vw,560px)] flex-col overflow-hidden rounded-xl border border-primary/30 bg-card shadow-2xl"
-      style={{ transform: `translate(${pos.x}px, ${pos.y}px)` }}
+      className={
+        halfScreen
+          ? 'fixed inset-y-0 right-0 z-[60] flex w-1/2 flex-col overflow-hidden border-l border-primary/30 bg-card shadow-2xl'
+          : 'fixed bottom-6 right-6 z-[60] flex h-[70vh] w-[min(90vw,560px)] flex-col overflow-hidden rounded-xl border border-primary/30 bg-card shadow-2xl'
+      }
+      style={halfScreen ? undefined : { transform: `translate(${pos.x}px, ${pos.y}px)` }}
     >
       {/* 标题栏（拖动把手） */}
       <div
@@ -370,9 +376,12 @@ function FloatingScore({ title, imageUrl }: { title: string; imageUrl: string })
           </button>
           <button
             type="button"
-            onClick={resetView}
-            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="重置视图"
+            onClick={toggleHalfScreen}
+            className={`rounded p-1.5 hover:bg-muted ${
+              halfScreen ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+            }`}
+            aria-label={halfScreen ? '退出半屏' : '半屏显示'}
+            title={halfScreen ? '退出半屏' : '半屏显示'}
           >
             <Maximize className="h-4 w-4" />
           </button>
