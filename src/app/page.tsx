@@ -83,7 +83,7 @@ export default function LandingPage() {
                 <span className="font-medium">学生入口</span>
               </div>
               <div className="grid gap-2">
-                {students.map((s) => (
+                {students.slice(0, 5).map((s) => (
                   <button
                     key={s.id}
                     onClick={() => enter(s)}
@@ -92,6 +92,11 @@ export default function LandingPage() {
                     <span className="text-foreground">{s.nickname}</span>
                   </button>
                 ))}
+                {students.length > 5 && (
+                  <p className="pt-1 text-center text-xs text-muted-foreground/60">
+                    示例身份 · 共 {students.length} 名学生数据已预置
+                  </p>
+                )}
               </div>
             </div>
           </div>
