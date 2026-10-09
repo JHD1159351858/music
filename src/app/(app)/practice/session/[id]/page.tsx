@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useUser } from '@/lib/user-context'
 import { Button } from '@/components/ui/button'
-import { Pause, Play, Square, Music4 } from 'lucide-react'
+import { Pause, Play, Square, Music4, FileMusic, ZoomIn, ZoomOut, Maximize, X, GripHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Score {
@@ -232,16 +232,13 @@ export default function PracticeSessionPage() {
           </div>
         </div>
 
-        {/* 右侧谱面区 */}
-        <div className="hidden w-[420px] flex-col border-l border-border bg-card/40 md:flex">
-          <div className="border-b border-border px-5 py-3 text-sm font-medium text-foreground">
-            琴谱
-          </div>
-          <div className="flex-1 overflow-y-auto p-5">
-            {score?.image_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={score.image_url} alt={score.title} className="w-full rounded-lg" />
-            ) : (
+        {/* 无谱面时的信息侧栏 */}
+        {!score?.image_url && (
+          <div className="hidden w-[420px] flex-col border-l border-border bg-card/40 md:flex">
+            <div className="border-b border-border px-5 py-3 text-sm font-medium text-foreground">
+              琴谱
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
               <div className="flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-border p-8 text-center">
                 <Music4 className="mb-4 h-10 w-10 text-primary/50" />
                 <p className="font-serif text-lg text-foreground">{score?.title}</p>
@@ -256,8 +253,121 @@ export default function PracticeSessionPage() {
                   该曲目暂未上传谱面图片
                 </p>
               </div>
-            )}
+            </div>
           </div>
+        )}
+      </div>
+
+      {/* 悬浮谱面窗口：可拖动、可缩放 */}
+      {score?.image_url && (
+        <FloatingScore title={score.title} imageUrl={score.image_url} />
+      )}
+    </div>
+  )
+}
+
+/** 可拖动 + 可缩放的悬浮谱面窗口 */
+function FloatingScore({ title, imageUrl }: { title: string; imageUrl: string }) {
+  const [open, setOpen] = useState(true)
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const dragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null)
+
+  const clampZoom = (z: number) => Math.min(3, Math.max(0.4, z))
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    dragRef.current = { startX: e.clientX, startY: e.clientY, baseX: pos.x, baseY: pos.y }
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+  }
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current
+    if (!d) return
+    setPos({ x: d.baseX + e.clientX - d.startX, y: d.baseY + e.clientY - d.startY })
+  }
+  const onPointerUp = () => {
+    dragRef.current = null
+  }
+
+  if (!open) {
+    // 收起后保留一个悬浮入口按钮
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 rounded-full border border-primary/40 bg-card px-4 py-2.5 text-sm text-primary shadow-xl transition-transform hover:scale-105"
+      >
+        <FileMusic className="h-4 w-4" />
+        打开琴谱
+      </button>
+    )
+  }
+
+  return (
+    <div
+      className="fixed bottom-6 right-6 z-[60] flex h-[70vh] w-[min(90vw,520px)] flex-col overflow-hidden rounded-xl border border-primary/30 bg-card shadow-2xl"
+      style={{ transform: `translate(${pos.x}px, ${pos.y}px)` }}
+    >
+      {/* 标题栏（拖动把手） */}
+      <div
+        className="flex cursor-grab touch-none items-center gap-2 border-b border-border bg-muted/60 px-3 py-2 select-none active:cursor-grabbing"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        <GripHorizontal className="h-4 w-4 text-muted-foreground" />
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{title}</span>
+        <div className="flex items-center gap-0.5" onPointerDown={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => setZoom((z) => clampZoom(z - 0.2))}
+            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="缩小"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </button>
+          <span className="w-11 text-center font-mono text-xs tabular-nums text-muted-foreground">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            onClick={() => setZoom((z) => clampZoom(z + 0.2))}
+            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="放大"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => { setZoom(1); setPos({ x: 0, y: 0 }) }}
+            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="重置"
+          >
+            <Maximize className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setOpen(false)}
+            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="关闭"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      {/* 谱面内容区：滚轮缩放 + 滚动查看 */}
+      <div
+        className="flex-1 overflow-auto bg-muted/20"
+        onWheel={(e) => {
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault()
+            setZoom((z) => clampZoom(z - Math.sign(e.deltaY) * 0.15))
+          }
+        }}
+      >
+        <div style={{ width: `${zoom * 100}%` }} className="p-2 transition-[width] duration-100">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl}
+            alt={title}
+            className="w-full rounded-md"
+            draggable={false}
+          />
         </div>
       </div>
     </div>
