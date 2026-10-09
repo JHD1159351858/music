@@ -33,6 +33,7 @@ export default function PracticeSessionPage() {
   const [recording, setRecording] = useState(false)
   const [saving, setSaving] = useState(false)
   const [micDenied, setMicDenied] = useState(false)
+  const [scoreHalf, setScoreHalf] = useState(false)
 
   const startTimeRef = useRef<Date>(new Date())
   const recorderRef = useRef<MediaRecorder | null>(null)
@@ -197,9 +198,13 @@ export default function PracticeSessionPage() {
         </div>
       </div>
 
-      {/* 中部：计时器 + 谱面 */}
+      {/* 中部：计时器 + 谱面（谱面半屏时计时区收缩到左半屏） */}
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex flex-1 flex-col items-center justify-center gap-8 px-8">
+        <div
+          className={`flex flex-col items-center justify-center gap-8 px-8 transition-all duration-300 ${
+            scoreHalf ? 'w-1/2 flex-none' : 'flex-1'
+          }`}
+        >
           {/* 大号计时器 */}
           <div className="text-center">
             <div className="font-mono text-7xl font-bold tabular-nums tracking-wider text-foreground md:text-8xl">
@@ -260,14 +265,14 @@ export default function PracticeSessionPage() {
 
       {/* 悬浮谱面窗口：可拖动、可缩放 */}
       {score?.image_url && (
-        <FloatingScore title={score.title} imageUrl={score.image_url} />
+        <FloatingScore title={score.title} imageUrl={score.image_url} onHalfScreenChange={setScoreHalf} />
       )}
     </div>
   )
 }
 
 /** 可拖动 + 可缩放的悬浮谱面窗口 */
-function FloatingScore({ title, imageUrl }: { title: string; imageUrl: string }) {
+function FloatingScore({ title, imageUrl, onHalfScreenChange }: { title: string; imageUrl: string; onHalfScreenChange?: (v: boolean) => void }) {
   const [open, setOpen] = useState(true)
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
@@ -314,7 +319,10 @@ function FloatingScore({ title, imageUrl }: { title: string; imageUrl: string })
   }
 
   const toggleHalfScreen = () => {
-    setHalfScreen((v) => !v)
+    setHalfScreen((v) => {
+      onHalfScreenChange?.(!v)
+      return !v
+    })
     setPos({ x: 0, y: 0 })
   }
 
@@ -387,7 +395,11 @@ function FloatingScore({ title, imageUrl }: { title: string; imageUrl: string })
           </button>
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setOpen(false)
+              setHalfScreen(false)
+              onHalfScreenChange?.(false)
+            }}
             className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             aria-label="关闭"
           >
