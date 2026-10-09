@@ -271,21 +271,49 @@ function FloatingScore({ title, imageUrl }: { title: string; imageUrl: string })
   const [open, setOpen] = useState(true)
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
-  const dragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null)
+  // 窗口拖动状态
+  const winDragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null)
+  // 谱面平移状态
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const panDragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null)
+  const [panning, setPanning] = useState(false)
 
-  const clampZoom = (z: number) => Math.min(3, Math.max(0.4, z))
+  const clampZoom = (z: number) => Math.min(4, Math.max(0.3, Number(z.toFixed(2))))
 
-  const onPointerDown = (e: React.PointerEvent) => {
-    dragRef.current = { startX: e.clientX, startY: e.clientY, baseX: pos.x, baseY: pos.y }
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+  // ---- 窗口拖动（标题栏） ----
+  const onWinPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    winDragRef.current = { startX: e.clientX, startY: e.clientY, baseX: pos.x, baseY: pos.y }
+    e.currentTarget.setPointerCapture(e.pointerId)
   }
-  const onPointerMove = (e: React.PointerEvent) => {
-    const d = dragRef.current
+  const onWinPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = winDragRef.current
     if (!d) return
     setPos({ x: d.baseX + e.clientX - d.startX, y: d.baseY + e.clientY - d.startY })
   }
-  const onPointerUp = () => {
-    dragRef.current = null
+  const onWinPointerUp = () => {
+    winDragRef.current = null
+  }
+
+  // ---- 谱面内容拖动平移 ----
+  const onPanPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    panDragRef.current = { startX: e.clientX, startY: e.clientY, baseX: pan.x, baseY: pan.y }
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setPanning(true)
+  }
+  const onPanPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = panDragRef.current
+    if (!d) return
+    setPan({ x: d.baseX + e.clientX - d.startX, y: d.baseY + e.clientY - d.startY })
+  }
+  const onPanPointerUp = () => {
+    panDragRef.current = null
+    setPanning(false)
+  }
+
+  const resetView = () => {
+    setZoom(1)
+    setPan({ x: 0, y: 0 })
   }
 
   if (!open) {
@@ -303,45 +331,53 @@ function FloatingScore({ title, imageUrl }: { title: string; imageUrl: string })
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-[60] flex h-[70vh] w-[min(90vw,520px)] flex-col overflow-hidden rounded-xl border border-primary/30 bg-card shadow-2xl"
+      className="fixed bottom-6 right-6 z-[60] flex h-[70vh] w-[min(90vw,560px)] flex-col overflow-hidden rounded-xl border border-primary/30 bg-card shadow-2xl"
       style={{ transform: `translate(${pos.x}px, ${pos.y}px)` }}
     >
       {/* 标题栏（拖动把手） */}
       <div
         className="flex cursor-grab touch-none items-center gap-2 border-b border-border bg-muted/60 px-3 py-2 select-none active:cursor-grabbing"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        onPointerDown={onWinPointerDown}
+        onPointerMove={onWinPointerMove}
+        onPointerUp={onWinPointerUp}
+        onPointerCancel={onWinPointerUp}
       >
-        <GripHorizontal className="h-4 w-4 text-muted-foreground" />
+        <GripHorizontal className="h-4 w-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{title}</span>
-        <div className="flex items-center gap-0.5" onPointerDown={(e) => e.stopPropagation()}>
+        {/* 按钮区：阻止冒泡，避免触发窗口拖动 */}
+        <div
+          className="flex shrink-0 items-center gap-0.5"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <button
-            onClick={() => setZoom((z) => clampZoom(z - 0.2))}
+            type="button"
+            onClick={() => setZoom((z) => clampZoom(z - 0.25))}
             className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             aria-label="缩小"
           >
             <ZoomOut className="h-4 w-4" />
           </button>
-          <span className="w-11 text-center font-mono text-xs tabular-nums text-muted-foreground">
+          <span className="w-12 text-center font-mono text-xs tabular-nums text-muted-foreground">
             {Math.round(zoom * 100)}%
           </span>
           <button
-            onClick={() => setZoom((z) => clampZoom(z + 0.2))}
+            type="button"
+            onClick={() => setZoom((z) => clampZoom(z + 0.25))}
             className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             aria-label="放大"
           >
             <ZoomIn className="h-4 w-4" />
           </button>
           <button
-            onClick={() => { setZoom(1); setPos({ x: 0, y: 0 }) }}
+            type="button"
+            onClick={resetView}
             className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="重置"
+            aria-label="重置视图"
           >
             <Maximize className="h-4 w-4" />
           </button>
           <button
+            type="button"
             onClick={() => setOpen(false)}
             className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             aria-label="关闭"
@@ -350,24 +386,35 @@ function FloatingScore({ title, imageUrl }: { title: string; imageUrl: string })
           </button>
         </div>
       </div>
-      {/* 谱面内容区：滚轮缩放 + 滚动查看 */}
+      {/* 谱面内容区：拖拽平移 + 滚轮缩放（无需修饰键） */}
       <div
-        className="flex-1 overflow-auto bg-muted/20"
+        className={`relative flex-1 touch-none overflow-hidden bg-muted/20 ${
+          panning ? 'cursor-grabbing' : 'cursor-grab'
+        }`}
+        onPointerDown={onPanPointerDown}
+        onPointerMove={onPanPointerMove}
+        onPointerUp={onPanPointerUp}
+        onPointerCancel={onPanPointerUp}
         onWheel={(e) => {
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault()
-            setZoom((z) => clampZoom(z - Math.sign(e.deltaY) * 0.15))
-          }
+          setZoom((z) => clampZoom(z - Math.sign(e.deltaY) * 0.12))
         }}
       >
-        <div style={{ width: `${zoom * 100}%` }} className="p-2 transition-[width] duration-100">
+        <div
+          className="absolute left-1/2 top-1/2 origin-center"
+          style={{
+            transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoom})`,
+          }}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
             alt={title}
-            className="w-full rounded-md"
+            className="max-w-[min(88vw,520px)] rounded-md select-none"
             draggable={false}
           />
+        </div>
+        <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-background/70 px-3 py-1 text-[11px] text-muted-foreground backdrop-blur">
+          拖动谱面平移 · 滚轮缩放
         </div>
       </div>
     </div>
