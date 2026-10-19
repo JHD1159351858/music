@@ -1,5 +1,21 @@
 # 项目上下文
 
+「知音」教学智能体：面向音乐教学场景的全栈应用（学生/教师双角色，接入超星统一认证，教师额外安全密码校验；配置见 `docs/chaoxing-auth.md`）。
+
+## 五大板块与代码位置
+- 练琴记录：`src/app/(app)/practice/`（列表页 + `session/[id]/` 沉浸练习页：计时 + MediaRecorder 录音 + 结束存档）
+- 乐谱分析：`src/app/(app)/analysis/` + `src/app/api/analysis/route.ts`（LLM 视觉识别图片 / MusicXML·ABC 文本 → 结构化 JSON 指标）
+- 练琴社区：`src/app/(app)/community/` + `/api/posts`、`/api/comments`、`/api/posts/[id]/like`
+- 音乐史地图：`src/app/(app)/map/` + `src/lib/composers.ts`（中西作曲家史实数据，头像在 `public/avatars/`）
+- 数据分析：`src/app/(app)/stats/` + `/api/stats`（教师端聚合统计）
+
+## 关键约定
+- 身份：超星认证中心的一次性票据由服务端验证，再建立 HttpOnly 签名会话；教师须额外安全密码校验。`src/lib/user-context.tsx` 仅读取服务端会话，不信任 localStorage 或请求 user_id 作为身份来源。登录账号区优先显示真实姓名，已验票的姓名、学工号、学校等白名单资料存于仅服务端可访问的 `auth_identities`；本人通过 `/api/auth/session` 读取。社区仍使用 `profiles.nickname`，不公开私有认证资料。
+- 数据：本机默认 SQLite（`data/zhiyin.sqlite`，`src/lib/local-database.ts` 自动建库），可设 `ZHIYIN_DATA_DIR` 指定持久目录；业务 CRUD 一律走 `/api/*` + `createSupabaseServer()` 统一数据入口。`ZHIYIN_STORAGE_MODE=supabase` 可使用原 Supabase／PolarDB 配置；远程 schema 在 `src/db/schema.ts`，迁移在 `drizzle/`。
+- LLM：`coder-coding-dev-sdk` LLMClient，对话统一走 `/api/chat`（SSE 流式），前端用 `src/components/chat-panel.tsx`（Reader 逐块渲染）
+- 文件：录音／谱图／视频上传走 `/api/upload`。本地模式落盘 `data/uploads`，使用持久签名密钥与 `/api/files/[id]` 读取；远程模式使用 StorageClient。均存 fileId。
+- 设计：深色音乐厅风格，规则见 `DESIGN.md`；只用语义主题变量，禁硬编码颜色
+
 ### 版本技术栈
 
 - **Framework**: Next.js 16 (App Router)
@@ -50,24 +66,6 @@
 ### next.config 配置规范
 
 - 配置的路径不要写死绝对路径，必须使用 path.resolve(__dirname, ...)、import.meta.dirname 或 process.cwd() 动态拼接。
-
-### 渲染策略规范（性能）
-
-> 资源受限的容器环境下，渲染策略直接决定内存与 CPU 占用。以下规范已落成 eslint 规则（见 `eslint.config.mjs` 的 `perfRules`），违反会被 `pnpm validate` 拦截。
-
-- **优先级 SSG > ISR > SSR**：默认优先静态化，能用 `generateStaticParams` 预渲染的不走运行时 SSR。
-- **禁止无脑 `cache: 'no-store'`**：它让每个请求都走 SSR，在资源受限容器上是内存与 CPU 双重浪费。确需实时数据请在页面级声明 `export const dynamic = 'force-dynamic'` 并注释原因。
-- **`revalidate` 建议 >= 300 秒**：过短会频繁触发后台重建；数据变更后改用 `revalidatePath()` / `revalidateTag()` 精准失效。
-- **禁止请求路径上的同步 I/O**（`fs.*Sync`）：会阻塞事件循环线程，改用 `fs/promises` 并加缓存。
-
-### 服务端性能约束（资源受限容器）
-
-> 目标运行环境为**资源受限的容器**（CPU/内存配额由平台注入，规格可能变化）；以下约束防止内存配置回退。
-
-- **严禁设置超过容器内存配额的堆值**（如把 `--max-old-space-size` 写死成大于配额的值）。堆上限一旦超过 cgroup 红线，V8 会迟迟不触发 GC，进程 RSS 越线后被内核直接 SIGKILL（无 JS 报错、无堆栈、日志戛然而止）。
-- **堆上限必须按容器可用内存动态探测**，统一走 `scripts/lib/heap.sh`（cgroup 优先）；严禁用 `/proc/meminfo` 直接探测——容器内它不被 namespace 隔离，读到的是宿主机内存，会算出远超 limit 的危险值。
-- **非法/超限值一律 clamp，不得 `exit 1`**：避免小内存配额下平台注入的合理值反被拒绝、构建/启动直接失败且无兜底。
-- `--max-old-space-size` 只约束 V8 老生代，**管不住 Turbopack 的 Rust/NAPI 原生内存**（实测占 dev 进程约 78%）；调堆不等于解决 OOM，原生内存需靠降低常驻（直调 tsx 去 pnpm 包装层、dev 关图片优化、生产关页面预加载）来削。
 
 ### Hydration 问题防范
 

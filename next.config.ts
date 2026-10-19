@@ -32,6 +32,7 @@ const nextConfig: NextConfig = {
       'vaul',
       'cmdk',
       'input-otp',
+      'fast-xml-parser',
     ],
     // 生产关预加载省常驻内存；dev 由框架自身禁用（源码 !options.dev 守卫），此值在 dev 无实际效果
     preloadEntriesOnStart: !isProd,

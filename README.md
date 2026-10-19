@@ -42,13 +42,15 @@ src/
 │       └── ...
 ├── lib/                     # 工具函数库
 │   └── utils.ts            # cn() 等工具函数
-├── hooks/                   # 自定义 React Hooks（可选）
-└── server.ts                # 自定义服务器入口（tsup 打包为 dist/server.js）
+└── hooks/                   # 自定义 React Hooks（可选）
+
+server/
+├── index.ts                 # 自定义服务器入口
+├── tsconfig.json           # Server TypeScript 配置
+└── dist/                    # 编译输出目录（自动生成）
 ```
 
 ## 核心开发规范
-
-> 完整的编码、性能与渲染策略规范以 **`AGENTS.md` 为单一真源**（含「渲染策略规范」「服务端性能约束」「Hydration 问题防范」等，且已落成 eslint 规则，`pnpm validate` 会拦截违规）。本节仅保留最常用的上手示例；若与 `AGENTS.md` 冲突，以 `AGENTS.md` 为准。
 
 ### 1. 组件开发
 
@@ -79,7 +81,7 @@ export default function MyComponent() {
 
 - 表单：`button`, `input`, `textarea`, `select`, `checkbox`, `radio-group`, `switch`, `slider`
 - 布局：`card`, `separator`, `tabs`, `accordion`, `collapsible`, `scroll-area`
-- 反馈：`alert`, `alert-dialog`, `dialog`, `sonner`, `progress`
+- 反馈：`alert`, `alert-dialog`, `dialog`, `toast`, `sonner`, `progress`
 - 导航：`dropdown-menu`, `menubar`, `navigation-menu`, `context-menu`
 - 数据展示：`table`, `avatar`, `badge`, `hover-card`, `tooltip`, `popover`
 - 其他：`calendar`, `command`, `carousel`, `resizable`, `sidebar`
@@ -175,7 +177,7 @@ pnpm add -D package-name
 # yarn add     # 错误！
 ```
 
-项目约定**仅使用 pnpm**（见 `AGENTS.md` 与 `package.json` 的 `engines` 字段）；请勿使用 npm 或 yarn，否则会生成不一致的锁文件、破坏依赖树。
+项目已配置 `preinstall` 脚本，使用其他包管理器会报错。
 
 ### 4. 样式开发
 
@@ -257,10 +259,9 @@ export default function MyForm() {
 
 ```tsx
 // src/app/posts/page.tsx
-// 默认优先静态化（SSG/ISR），避免无脑 no-store 让每个请求都走 SSR（详见 AGENTS.md「渲染策略规范」）
 async function getPosts() {
   const res = await fetch('https://api.example.com/posts', {
-    next: { revalidate: 3600 }, // ISR：每小时后台重建；确需实时数据再在页面级声明 dynamic = 'force-dynamic'
+    cache: 'no-store', // 或 'force-cache'
   });
   return res.json();
 }
@@ -314,62 +315,35 @@ export default function ClientComponent() {
 
 ### 添加全局状态
 
-模板未预装状态管理库，优先使用 React 内置的 Context + useReducer；如需 Zustand 等请先 `pnpm add` 再使用：
+推荐使用 React Context 或 Zustand：
 
 ```tsx
-// src/lib/store.tsx
-'use client';
+// src/lib/store.ts
+import { create } from 'zustand';
 
-import { createContext, useContext, useReducer } from 'react';
-
-interface State {
+interface Store {
   count: number;
+  increment: () => void;
 }
 
-type Action = { type: 'increment' };
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'increment':
-      return { count: state.count + 1 };
-    default:
-      return state;
-  }
-}
-
-const StoreContext = createContext<{
-  state: State;
-  dispatch: React.Dispatch<Action>;
-} | null>(null);
-
-export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, { count: 0 });
-  return (
-    <StoreContext.Provider value={{ state, dispatch }}>
-      {children}
-    </StoreContext.Provider>
-  );
-}
-
-export function useStore() {
-  const ctx = useContext(StoreContext);
-  if (!ctx) throw new Error('useStore 必须在 StoreProvider 内使用');
-  return ctx;
-}
+export const useStore = create<Store>((set) => ({
+  count: 0,
+  increment: () => set((state) => ({ count: state.count + 1 })),
+}));
 ```
 
 ### 集成数据库
 
-模板已预装 Drizzle ORM（`drizzle-orm` / `drizzle-kit` / `drizzle-zod`）与 `pg`，在 `src/lib/db.ts` 中配置；未预装 Prisma，如需请自行 `pnpm add`。
+推荐使用 Prisma 或 Drizzle ORM，在 `src/lib/db.ts` 中配置。
 
 ## 技术栈
 
-- **框架**: Next.js 16.3.8 (App Router)
+- **框架**: Next.js 16.1.1 (App Router)
 - **UI 组件**: shadcn/ui (基于 Radix UI)
 - **样式**: Tailwind CSS v4
 - **表单**: React Hook Form + Zod
 - **图标**: Lucide React
-- **字体**: 系统中文栈（PingFang SC / Microsoft YaHei，见 `globals.css`）；未使用 `next/font`
+- **字体**: Geist Sans & Geist Mono
 - **包管理器**: pnpm 9+
 - **TypeScript**: 5.x
 
