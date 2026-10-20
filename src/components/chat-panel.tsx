@@ -13,7 +13,7 @@ export interface ChatMessage {
 
 interface ChatPanelProps {
   /** SSE 对话上下文，透传给 /api/chat */
-  context?: { kind: 'score' | 'composer'; name?: string; analysis?: Record<string, unknown> }
+  context?: { kind: 'score' | 'composer'; name?: string; composerId?: string; analysis?: Record<string, unknown> }
   /** 自动发送的开场指令（传入即自动触发一条助手消息） */
   autoPrompt?: string
   placeholder?: string
@@ -25,6 +25,8 @@ export function ChatPanel({ context, autoPrompt, placeholder, className }: ChatP
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
   const [streaming, setStreaming] = useState(false)
+  const [sources, setSources] = useState<{ title: string; url: string | null }[]>([])
+  const [streamError, setStreamError] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const autoFired = useRef(false)
   // 用 ref 追踪 context 引用，避免对象字面量导致的重复触发
@@ -35,6 +37,8 @@ export function ChatPanel({ context, autoPrompt, placeholder, className }: ChatP
     const nextHistory: ChatMessage[] = [...history, { role: 'user', content: text }]
     setMessages([...nextHistory, { role: 'assistant', content: '' }])
     setStreaming(true)
+    setStreamError('')
+    setSources([])
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -61,8 +65,19 @@ export function ChatPanel({ context, autoPrompt, placeholder, className }: ChatP
           const payload = line.slice(5).trim()
           if (payload === '[DONE]') continue
           try {
-            const json = JSON.parse(payload)
-            if (json.content) {
+            const json: unknown = JSON.parse(payload)
+            if (!json || typeof json !== 'object') continue
+            if ('error' in json && typeof json.error === 'string') {
+              setStreamError(json.error)
+              if (!acc) {
+                acc = json.error
+                setMessages(current => [...current.slice(0, -1), { role: 'assistant', content: acc }])
+              }
+            }
+            if ('sources' in json && Array.isArray(json.sources)) {
+              setSources(json.sources.filter((source): source is { title: string; url: string | null } => !!source && typeof source === 'object' && 'title' in source && typeof source.title === 'string' && 'url' in source && (source.url === null || typeof source.url === 'string' && /^https?:\/\//i.test(source.url))))
+            }
+            if ('content' in json && typeof json.content === 'string') {
               acc += json.content
               setMessages((m) => {
                 const copy = [...m]
@@ -94,7 +109,6 @@ export function ChatPanel({ context, autoPrompt, placeholder, className }: ChatP
       autoFired.current = true
       send(autoPrompt, [])
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoPrompt])
 
   useEffect(() => {
@@ -131,6 +145,8 @@ export function ChatPanel({ context, autoPrompt, placeholder, className }: ChatP
         ))}
         <div ref={bottomRef} />
       </div>
+      {sources.length > 0 && <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground"><span>本轮参考：</span>{sources.map((source, index) => <span key={`${source.title}-${index}`} className="mr-2">{source.url ? <a className="text-primary underline-offset-4 hover:underline" href={source.url} target="_blank" rel="noopener noreferrer">{source.title}</a> : source.title}</span>)}</div>}
+      {streamError && <p role="alert" className="px-4 py-2 text-xs text-destructive">{streamError}</p>}
       <div className="flex gap-2 border-t border-border p-3">
         <Input
           value={draft}

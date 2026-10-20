@@ -1,0 +1,13 @@
+{
+  "fixture": "existing production build + isolated SQLite + local synthetic SSO broker; not real Chaoxing authentication",
+  "checks": [
+    "anonymous sessions expose no identity and cannot skip teacher authentication",
+    "real callback maps synthetic provider name, school and account fields into a whitelisted own-user session",
+    "one-use broker tickets cannot be replayed and student sessions cannot enter teacher management",
+    "verified identity survives refresh and process restart in the isolated persistent database",
+    "teacher SSO remains pending and reveals no profile until the separate security password succeeds",
+    "teacher password creates the correct role session and client-supplied identity fields cannot replace verified data",
+    "logout clears the authenticated account and subsequent session responses contain no profile"
+  ],
+  "realChaoxingLoginVerified": false
+}

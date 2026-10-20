@@ -38,7 +38,7 @@ start_service() {
     echo "Starting HTTP service..."
 
     # 组装环境变量启动服务
-    PORT="${DEPLOY_RUN_PORT}" NODE_OPTIONS="--max-old-space-size=${MAX_HEAP_MB}" node dist/server.js
+    CODER_PROJECT_ENV=PROD NODE_ENV=production PORT="${DEPLOY_RUN_PORT}" NODE_OPTIONS="--max-old-space-size=${MAX_HEAP_MB}" exec node dist/server.js
 }
 
 # 启动入口

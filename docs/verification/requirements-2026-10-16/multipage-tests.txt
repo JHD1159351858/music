@@ -1,0 +1,264 @@
+TAP version 13
+# (node:38156) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: student personal uploads stay private, are queued, editable and deletable only by owner
+ok 1 - student personal uploads stay private, are queued, editable and deletable only by owner
+  ---
+  duration_ms: 124.221
+  type: 'test'
+  ...
+# Subtest: student cannot claim another persons uploaded file as their private score
+ok 2 - student cannot claim another persons uploaded file as their private score
+  ---
+  duration_ms: 17.3919
+  type: 'test'
+  ...
+# Subtest: real local signed URLs save successfully and deleting the record revokes its recording
+ok 3 - real local signed URLs save successfully and deleting the record revokes its recording
+  ---
+  duration_ms: 50.1962
+  type: 'test'
+  ...
+# Subtest: private score file URL renewal is available to its owner only
+ok 4 - private score file URL renewal is available to its owner only
+  ---
+  duration_ms: 71.9629
+  type: 'test'
+  ...
+# Subtest: even a valid signed private file URL requires its owner session
+ok 5 - even a valid signed private file URL requires its owner session
+  ---
+  duration_ms: 67.8497
+  type: 'test'
+  ...
+# Subtest: class restrictions apply equally to score list, details and the signed file route
+ok 6 - class restrictions apply equally to score list, details and the signed file route
+  ---
+  duration_ms: 191.1084
+  type: 'test'
+  ...
+# Subtest: withdrawn fixed scores and withdrawn random assignments do not remain available to students
+ok 7 - withdrawn fixed scores and withdrawn random assignments do not remain available to students
+  ---
+  duration_ms: 63.4072
+  type: 'test'
+  ...
+# Subtest: multiple score images retain order and every page renews in details, library and practice queue
+ok 8 - multiple score images retain order and every page renews in details, library and practice queue
+  ---
+  duration_ms: 177.822
+  type: 'test'
+  ...
+# Subtest: all score pages enforce uploader ownership, actual MIME and image/PDF limits
+ok 9 - all score pages enforce uploader ownership, actual MIME and image/PDF limits
+  ---
+  duration_ms: 88.134
+  type: 'test'
+  ...
+# Subtest: second page downloads and URL renewal obey score publication and class scope
+ok 10 - second page downloads and URL renewal obey score publication and class scope
+  ---
+  duration_ms: 1064.3277
+  type: 'test'
+  ...
+# Subtest: removed pages are cleaned only after every score reference is removed and legacy replacement clears pages
+ok 11 - removed pages are cleaned only after every score reference is removed and legacy replacement clears pages
+  ---
+  duration_ms: 804.6947
+  type: 'test'
+  ...
+# Subtest: create retries repair the queue only for the same saved intent and reject changed pages or metadata
+ok 12 - create retries repair the queue only for the same saved intent and reject changed pages or metadata
+  ---
+  duration_ms: 118.7024
+  type: 'test'
+  ...
+# Subtest: 多页上传中断后重试只上传剩余页面，保持用户指定顺序
+ok 13 - 多页上传中断后重试只上传剩余页面，保持用户指定顺序
+  ---
+  duration_ms: 2.1999
+  type: 'test'
+  ...
+# Subtest: 编辑已有谱页直接保留引用，不重新上传
+ok 14 - 编辑已有谱页直接保留引用，不重新上传
+  ---
+  duration_ms: 0.2402
+  type: 'test'
+  ...
+# (node:50048) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: creates an on-disk SQLite database and retains updates when a new client opens it
+ok 15 - creates an on-disk SQLite database and retains updates when a new client opens it
+  ---
+  duration_ms: 224.0035
+  type: 'test'
+  ...
+# Subtest: initializes only nickname identities and leaves teaching content empty
+ok 16 - initializes only nickname identities and leaves teaching content empty
+  ---
+  duration_ms: 29.4236
+  type: 'test'
+  ...
+# Subtest: JSON page containment locates a file beyond the legacy first page without matching unrelated files
+ok 17 - JSON page containment locates a file beyond the legacy first page without matching unrelated files
+  ---
+  duration_ms: 33.9732
+  type: 'test'
+  ...
+# Subtest: existing single-file scores survive the additive page column migration
+ok 18 - existing single-file scores survive the additive page column migration
+  ---
+  duration_ms: 32.5977
+  type: 'test'
+  ...
+# Subtest: enforces unique values and preserves identity on conflicting upsert
+ok 19 - enforces unique values and preserves identity on conflicting upsert
+  ---
+  duration_ms: 56.57
+  type: 'test'
+  ...
+# Subtest: projects nested score, genre, profile and reverse comment relations
+ok 20 - projects nested score, genre, profile and reverse comment relations
+  ---
+  duration_ms: 49.7243
+  type: 'test'
+  ...
+# Subtest: filters published rows, search patterns, date ranges and inclusive ordered pagination
+ok 21 - filters published rows, search patterns, date ranges and inclusive ordered pagination
+  ---
+  duration_ms: 23.5647
+  type: 'test'
+  ...
+# Subtest: rejects dangling references and protects a referenced genre from deletion
+ok 22 - rejects dangling references and protects a referenced genre from deletion
+  ---
+  duration_ms: 30.3259
+  type: 'test'
+  ...
+# Subtest: rolls back the entire bulk insert when any row violates a constraint
+ok 23 - rolls back the entire bulk insert when any row violates a constraint
+  ---
+  duration_ms: 15.4358
+  type: 'test'
+  ...
+# Subtest: returns a meaningful single-row error instead of losing cardinality
+ok 24 - returns a meaningful single-row error instead of losing cardinality
+  ---
+  duration_ms: 18.7613
+  type: 'test'
+  ...
+# Subtest: ordered score pages take precedence and legacy single files remain readable
+ok 25 - ordered score pages take precedence and legacy single files remain readable
+  ---
+  duration_ms: 0.9434
+  type: 'test'
+  ...
+# (node:41420) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: valid remote receipt supplies MIME and is stripped before score persistence
+ok 26 - valid remote receipt supplies MIME and is stripped before score persistence
+  ---
+  duration_ms: 18.7361
+  type: 'test'
+  ...
+# Subtest: remote receipt cannot be used by another score owner
+ok 27 - remote receipt cannot be used by another score owner
+  ---
+  duration_ms: 20.0015
+  type: 'test'
+  ...
+# Subtest: legacy remote file without receipt is accepted only from an existing score owned by the actor
+ok 28 - legacy remote file without receipt is accepted only from an existing score owned by the actor
+  ---
+  duration_ms: 29.9975
+  type: 'test'
+  ...
+# Subtest: score upload receipt returns server MIME only for the bound file and owner
+ok 29 - score upload receipt returns server MIME only for the bound file and owner
+  ---
+  duration_ms: 1.965
+  type: 'test'
+  ...
+# Subtest: score upload receipt rejects tampering and expiry
+ok 30 - score upload receipt rejects tampering and expiry
+  ---
+  duration_ms: 0.4825
+  type: 'test'
+  ...
+# (node:49988) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 没有 fileId 的旧文件保留 URL，缺存储配置也不实例化客户端
+ok 31 - 没有 fileId 的旧文件保留 URL，缺存储配置也不实例化客户端
+  ---
+  duration_ms: 0.8765
+  type: 'test'
+  ...
+# Subtest: 已有 fileId 却缺存储配置时明确报 503，不返回过期旧链接
+ok 32 - 已有 fileId 却缺存储配置时明确报 503，不返回过期旧链接
+  ---
+  duration_ms: 0.6967
+  type: 'test'
+  ...
+# Subtest: 通过真实 SDK 续签提交音视频及关联记录，去重且最多四个并发请求
+ok 33 - 通过真实 SDK 续签提交音视频及关联记录，去重且最多四个并发请求
+  ---
+  duration_ms: 81.9144
+  type: 'test'
+  ...
+# Subtest: partial edits do not inject defaults into untouched score or task properties
+ok 34 - partial edits do not inject defaults into untouched score or task properties
+  ---
+  duration_ms: 2.9053
+  type: 'test'
+  ...
+# Subtest: private uploads are readable only by their owner while teacher drafts remain hidden
+ok 35 - private uploads are readable only by their owner while teacher drafts remain hidden
+  ---
+  duration_ms: 0.153
+  type: 'test'
+  ...
+# Subtest: published teacher scores follow their assigned class and empty means all classes
+ok 36 - published teacher scores follow their assigned class and empty means all classes
+  ---
+  duration_ms: 0.0766
+  type: 'test'
+  ...
+# Subtest: local upload URLs can be saved by real score, recording and submission forms
+ok 37 - local upload URLs can be saved by real score, recording and submission forms
+  ---
+  duration_ms: 1.9375
+  type: 'test'
+  ...
+# Subtest: required submission items cannot be replaced by unrelated material
+ok 38 - required submission items cannot be replaced by unrelated material
+  ---
+  duration_ms: 0.1165
+  type: 'test'
+  ...
+# Subtest: semester completion counts only records within inclusive date boundaries
+ok 39 - semester completion counts only records within inclusive date boundaries
+  ---
+  duration_ms: 0.1982
+  type: 'test'
+  ...
+# Subtest: class and individual tasks are visible only to matching students
+ok 40 - class and individual tasks are visible only to matching students
+  ---
+  duration_ms: 0.1639
+  type: 'test'
+  ...
+# Subtest: random score assignment is stable for a task and student
+ok 41 - random score assignment is stable for a task and student
+  ---
+  duration_ms: 0.0951
+  type: 'test'
+  ...
+1..41
+# tests 41
+# suites 0
+# pass 41
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3867.8735

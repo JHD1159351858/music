@@ -1,0 +1,535 @@
+TAP version 13
+# (node:42032) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: student personal uploads stay private, are queued, editable and deletable only by owner
+ok 1 - student personal uploads stay private, are queued, editable and deletable only by owner
+  ---
+  duration_ms: 212.0981
+  type: 'test'
+  ...
+# Subtest: student cannot claim another persons uploaded file as their private score
+ok 2 - student cannot claim another persons uploaded file as their private score
+  ---
+  duration_ms: 32.6445
+  type: 'test'
+  ...
+# Subtest: real local signed URLs save successfully and deleting the record revokes its recording
+ok 3 - real local signed URLs save successfully and deleting the record revokes its recording
+  ---
+  duration_ms: 98.9601
+  type: 'test'
+  ...
+# Subtest: private score file URL renewal is available to its owner only
+ok 4 - private score file URL renewal is available to its owner only
+  ---
+  duration_ms: 124.3434
+  type: 'test'
+  ...
+# Subtest: even a valid signed private file URL requires its owner session
+ok 5 - even a valid signed private file URL requires its owner session
+  ---
+  duration_ms: 126.616
+  type: 'test'
+  ...
+# Subtest: class restrictions apply equally to score list, details and the signed file route
+ok 6 - class restrictions apply equally to score list, details and the signed file route
+  ---
+  duration_ms: 625.7265
+  type: 'test'
+  ...
+# Subtest: withdrawn fixed scores and withdrawn random assignments do not remain available to students
+ok 7 - withdrawn fixed scores and withdrawn random assignments do not remain available to students
+  ---
+  duration_ms: 99.6119
+  type: 'test'
+  ...
+# (node:41444) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: teacher goals show every student progress from actual records with semester boundaries
+ok 8 - teacher goals show every student progress from actual records with semester boundaries
+  ---
+  duration_ms: 127.5824
+  type: 'test'
+  ...
+# Subtest: 保存记录失败后重试保留录音且不会重复上传
+ok 9 - 保存记录失败后重试保留录音且不会重复上传
+  ---
+  duration_ms: 2.0839
+  type: 'test'
+  ...
+# Subtest: 录音上传失败时保留原始录音并阻止静默丢弃录音
+ok 10 - 录音上传失败时保留原始录音并阻止静默丢弃录音
+  ---
+  duration_ms: 1.0833
+  type: 'test'
+  ...
+# (node:41208) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: analysis never attributes another work background to a work by the same composer
+ok 11 - analysis never attributes another work background to a work by the same composer
+  ---
+  duration_ms: 58.2028
+  type: 'test'
+  ...
+# (node:42200) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: session rejects tampering, expiry, and tokens for another purpose
+ok 12 - session rejects tampering, expiry, and tokens for another purpose
+  ---
+  duration_ms: 78.2638
+  type: 'test'
+  ...
+# Subtest: safe redirect allows internal pages and rejects external or encoded bypasses
+ok 13 - safe redirect allows internal pages and rejects external or encoded bypasses
+  ---
+  duration_ms: 0.6449
+  type: 'test'
+  ...
+# Subtest: temporary local testing uses only the student account and can be disabled
+ok 14 - temporary local testing uses only the student account and can be disabled
+  ---
+  duration_ms: 5.4269
+  type: 'test'
+  ...
+# Subtest: an empty optional secret uses the persistent local signing key
+ok 15 - an empty optional secret uses the persistent local signing key
+  ---
+  duration_ms: 21.4818
+  type: 'test'
+  ...
+# Subtest: cross-site and absent Origin fail state-changing requests
+ok 16 - cross-site and absent Origin fail state-changing requests
+  ---
+  duration_ms: 1.6633
+  type: 'test'
+  ...
+# Subtest: teacher authority uses trusted role names or explicit configured IDs, never guessed numeric roles
+ok 17 - teacher authority uses trusted role names or explicit configured IDs, never guessed numeric roles
+  ---
+  duration_ms: 0.4703
+  type: 'test'
+  ...
+# Subtest: teacher security password has no default and rate-limits failed verified identities
+ok 18 - teacher security password has no default and rate-limits failed verified identities
+  ---
+  duration_ms: 0.7704
+  type: 'test'
+  ...
+# (node:42180) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: full broker protocol validates nonce before consuming ticket and requires teacher password before any session
+ok 19 - full broker protocol validates nonce before consuming ticket and requires teacher password before any session
+  ---
+  duration_ms: 235.3904
+  type: 'test'
+  ...
+# Subtest: missing provider configuration fails closed and cross-origin auth start is rejected
+ok 20 - missing provider configuration fails closed and cross-origin auth start is rejected
+  ---
+  duration_ms: 2.1387
+  type: 'test'
+  ...
+# (node:39336) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: chat requires a session and gives an explicit range response when no knowledge is collected
+ok 21 - chat requires a session and gives an explicit range response when no knowledge is collected
+  ---
+  duration_ms: 52.9518
+  type: 'test'
+  ...
+# Subtest: lesson focus export includes complete multi-line questions and teacher replies as plain text
+ok 22 - lesson focus export includes complete multi-line questions and teacher replies as plain text
+  ---
+  duration_ms: 1.2014
+  type: 'test'
+  ...
+# (node:12564) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: direct messages persist the chosen teacher and never appear in the public feed
+ok 23 - direct messages persist the chosen teacher and never appear in the public feed
+  ---
+  duration_ms: 330.4367
+  type: 'test'
+  ...
+# Subtest: unrelated users cannot read, reply, like, mark or delete a direct message
+ok 24 - unrelated users cannot read, reply, like, mark or delete a direct message
+  ---
+  duration_ms: 200.8569
+  type: 'test'
+  ...
+# Subtest: lesson marks belong to each teacher and unmarking does not change another teacher
+ok 25 - lesson marks belong to each teacher and unmarking does not change another teacher
+  ---
+  duration_ms: 153.1278
+  type: 'test'
+  ...
+# Subtest: only a teacher can be selected as a message recipient and categories are validated
+ok 26 - only a teacher can be selected as a message recipient and categories are validated
+  ---
+  duration_ms: 58.1052
+  type: 'test'
+  ...
+# Subtest: popular sorting applies to visible public posts only
+ok 27 - popular sorting applies to visible public posts only
+  ---
+  duration_ms: 125.0185
+  type: 'test'
+  ...
+# Subtest: each music history profile has traceable HTTPS references
+ok 28 - each music history profile has traceable HTTPS references
+  ---
+  duration_ms: 1.3371
+  type: 'test'
+  ...
+# Subtest: China eras all contain a profile and Europe eras include sourced Chinese context
+ok 29 - China eras all contain a profile and Europe eras include sourced Chinese context
+  ---
+  duration_ms: 0.4465
+  type: 'test'
+  ...
+# (node:25496) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: teachers maintain their own knowledge, students only read, retrieval does not invent matches
+ok 30 - teachers maintain their own knowledge, students only read, retrieval does not invent matches
+  ---
+  duration_ms: 209.6173
+  type: 'test'
+  ...
+# (node:40076) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: creates an on-disk SQLite database and retains updates when a new client opens it
+ok 31 - creates an on-disk SQLite database and retains updates when a new client opens it
+  ---
+  duration_ms: 483.4996
+  type: 'test'
+  ...
+# Subtest: initializes only nickname identities and leaves teaching content empty
+ok 32 - initializes only nickname identities and leaves teaching content empty
+  ---
+  duration_ms: 61.096
+  type: 'test'
+  ...
+# Subtest: enforces unique values and preserves identity on conflicting upsert
+ok 33 - enforces unique values and preserves identity on conflicting upsert
+  ---
+  duration_ms: 131.1544
+  type: 'test'
+  ...
+# Subtest: projects nested score, genre, profile and reverse comment relations
+ok 34 - projects nested score, genre, profile and reverse comment relations
+  ---
+  duration_ms: 96.6176
+  type: 'test'
+  ...
+# Subtest: filters published rows, search patterns, date ranges and inclusive ordered pagination
+ok 35 - filters published rows, search patterns, date ranges and inclusive ordered pagination
+  ---
+  duration_ms: 56.2179
+  type: 'test'
+  ...
+# Subtest: rejects dangling references and protects a referenced genre from deletion
+ok 36 - rejects dangling references and protects a referenced genre from deletion
+  ---
+  duration_ms: 78.4214
+  type: 'test'
+  ...
+# Subtest: rolls back the entire bulk insert when any row violates a constraint
+ok 37 - rolls back the entire bulk insert when any row violates a constraint
+  ---
+  duration_ms: 46.269
+  type: 'test'
+  ...
+# Subtest: returns a meaningful single-row error instead of losing cardinality
+ok 38 - returns a meaningful single-row error instead of losing cardinality
+  ---
+  duration_ms: 43.3527
+  type: 'test'
+  ...
+# (node:38056) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 真实文件和签名密钥持久化，另一个进程能够续签并读取同一份琴谱
+ok 39 - 真实文件和签名密钥持久化，另一个进程能够续签并读取同一份琴谱
+  ---
+  duration_ms: 510.6175
+  type: 'test'
+  ...
+# Subtest: 媒体 GET 和 HEAD 支持单段、后缀和开放结尾 Range，损坏或多段范围返回 416
+ok 40 - 媒体 GET 和 HEAD 支持单段、后缀和开放结尾 Range，损坏或多段范围返回 416
+  ---
+  duration_ms: 86.8294
+  type: 'test'
+  ...
+# Subtest: 拒绝缺失、篡改、过期签名和路径穿越，未上传的文件不能续签
+ok 41 - 拒绝缺失、篡改、过期签名和路径穿越，未上传的文件不能续签
+  ---
+  duration_ms: 21.4847
+  type: 'test'
+  ...
+# Subtest: 没有云密钥时，琴谱、录音和提交材料均可续签本地文件链接
+ok 42 - 没有云密钥时，琴谱、录音和提交材料均可续签本地文件链接
+  ---
+  duration_ms: 34.6542
+  type: 'test'
+  ...
+# Subtest: 首次并发续签使用同一持久密钥，所有签名均可读取文件
+ok 43 - 首次并发续签使用同一持久密钥，所有签名均可读取文件
+  ---
+  duration_ms: 1093.132
+  type: 'test'
+  ...
+# (node:38580) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: persists class-scoped scores, private teacher messages, individual lesson marks and course knowledge
+ok 44 - persists class-scoped scores, private teacher messages, individual lesson marks and course knowledge
+  ---
+  duration_ms: 113.2239
+  type: 'test'
+  ...
+# Subtest: MusicXML metrics use actual pitched notes, exclude rests, and preserve pitch order
+ok 45 - MusicXML metrics use actual pitched notes, exclude rests, and preserve pitch order
+  ---
+  duration_ms: 8.9218
+  type: 'test'
+  ...
+# Subtest: ABC parser applies key signatures and accidentals within a measure
+ok 46 - ABC parser applies key signatures and accidentals within a measure
+  ---
+  duration_ms: 2.0057
+  type: 'test'
+  ...
+# Subtest: MusicXML key signature without a mode does not assume a major key
+ok 47 - MusicXML key signature without a mode does not assume a major key
+  ---
+  duration_ms: 0.8324
+  type: 'test'
+  ...
+# Subtest: ABC tied accidental keeps its pitch across a measure boundary
+ok 48 - ABC tied accidental keeps its pitch across a measure boundary
+  ---
+  duration_ms: 0.6384
+  type: 'test'
+  ...
+# Subtest: unsupported or incomplete notation is rejected instead of reporting invented totals
+ok 49 - unsupported or incomplete notation is rejected instead of reporting invented totals
+  ---
+  duration_ms: 1.6318
+  type: 'test'
+  ...
+# Subtest: unrecognized image fields stay null; only validated transcribed notes generate metrics
+ok 50 - unrecognized image fields stay null; only validated transcribed notes generate metrics
+  ---
+  duration_ms: 1.9981
+  type: 'test'
+  ...
+# (node:40980) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:40980) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# Subtest: students receive only their own statistics and cannot use class filters to reveal peers
+ok 51 - students receive only their own statistics and cannot use class filters to reveal peers
+  ---
+  duration_ms: 126.6631
+  type: 'test'
+  ...
+# Subtest: teacher class statistics use the selected roster including inactive students and exclude teacher records
+ok 52 - teacher class statistics use the selected roster including inactive students and exclude teacher records
+  ---
+  duration_ms: 101.1602
+  type: 'test'
+  ...
+# Subtest: this month starts at the calendar month boundary in China time and excludes future records
+ok 53 - this month starts at the calendar month boundary in China time and excludes future records
+  ---
+  duration_ms: 74.1928
+  type: 'test'
+  ...
+# Subtest: statistics read every record beyond the database default page size
+ok 54 - statistics read every record beyond the database default page size
+  ---
+  duration_ms: 145.2712
+  type: 'test'
+  ...
+# Subtest: local persistence is default and explicitly selected local mode overrides cloud settings
+ok 55 - local persistence is default and explicitly selected local mode overrides cloud settings
+  ---
+  duration_ms: 1.505
+  type: 'test'
+  ...
+# (node:15924) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: a legacy anon-only remote configuration fails closed with HTTP 503
+ok 56 - a legacy anon-only remote configuration fails closed with HTTP 503
+  ---
+  duration_ms: 11.4019
+  type: 'test'
+  ...
+# Subtest: explicit remote mode requires a server service key even when an anon key exists
+ok 57 - explicit remote mode requires a server service key even when an anon key exists
+  ---
+  duration_ms: 2.1244
+  type: 'test'
+  ...
+# Subtest: local default and explicit local mode keep working without any cloud service key
+ok 58 - local default and explicit local mode keep working without any cloud service key
+  ---
+  duration_ms: 33.4712
+  type: 'test'
+  ...
+# Subtest: remote requests use only the server service key and preserve the tenant header
+ok 59 - remote requests use only the server service key and preserve the tenant header
+  ---
+  duration_ms: 11.5718
+  type: 'test'
+  ...
+# (node:39972) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: fixed and random tasks cannot assign class-restricted scores outside the task audience
+ok 60 - fixed and random tasks cannot assign class-restricted scores outside the task audience
+  ---
+  duration_ms: 138.407
+  type: 'test'
+  ...
+# Subtest: editing a task audience validates score visibility, while closing still works after a score is unpublished
+ok 61 - editing a task audience validates score visibility, while closing still works after a score is unpublished
+  ---
+  duration_ms: 103.6056
+  type: 'test'
+  ...
+# Subtest: submissions reject materials that the task explicitly does not request
+ok 62 - submissions reject materials that the task explicitly does not request
+  ---
+  duration_ms: 78.7926
+  type: 'test'
+  ...
+# Subtest: submissions enforce uploaded file ownership and audio/video media types
+ok 63 - submissions enforce uploaded file ownership and audio/video media types
+  ---
+  duration_ms: 113.7191
+  type: 'test'
+  ...
+# Subtest: standalone audio, video and text records are reviewable and scores return only to the submitting student
+ok 64 - standalone audio, video and text records are reviewable and scores return only to the submitting student
+  ---
+  duration_ms: 252.1965
+  type: 'test'
+  ...
+# (node:39248) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: anonymous API reads and writes return JSON 401 instead of using supplied user identity
+ok 65 - anonymous API reads and writes return JSON 401 instead of using supplied user identity
+  ---
+  duration_ms: 14.1682
+  type: 'test'
+  ...
+# Subtest: actor rejects forged query/body identities, unsigned cookies, and expired or stale sessions
+ok 66 - actor rejects forged query/body identities, unsigned cookies, and expired or stale sessions
+  ---
+  duration_ms: 43.9337
+  type: 'test'
+  ...
+# Subtest: roster is scoped to the student and only teachers can maintain class membership
+ok 67 - roster is scoped to the student and only teachers can maintain class membership
+  ---
+  duration_ms: 74.7254
+  type: 'test'
+  ...
+# Subtest: post ownership is session-bound and deletion permits the author or a teacher
+ok 68 - post ownership is session-bound and deletion permits the author or a teacher
+  ---
+  duration_ms: 114.8024
+  type: 'test'
+  ...
+# Subtest: only teachers may mark community posts for lessons
+ok 69 - only teachers may mark community posts for lessons
+  ---
+  duration_ms: 59.5043
+  type: 'test'
+  ...
+# Subtest: comments and likes use the signed-in author and reject a supplied different identity
+ok 70 - comments and likes use the signed-in author and reject a supplied different identity
+  ---
+  duration_ms: 106.3757
+  type: 'test'
+  ...
+# Subtest: statistics allow a student own data while preventing forged access to teacher data
+ok 71 - statistics allow a student own data while preventing forged access to teacher data
+  ---
+  duration_ms: 55.6464
+  type: 'test'
+  ...
+# (node:39268) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 没有 fileId 的旧文件保留 URL，缺存储配置也不实例化客户端
+ok 72 - 没有 fileId 的旧文件保留 URL，缺存储配置也不实例化客户端
+  ---
+  duration_ms: 1.0778
+  type: 'test'
+  ...
+# Subtest: 已有 fileId 却缺存储配置时明确报 503，不返回过期旧链接
+ok 73 - 已有 fileId 却缺存储配置时明确报 503，不返回过期旧链接
+  ---
+  duration_ms: 1.4839
+  type: 'test'
+  ...
+# Subtest: 通过真实 SDK 续签提交音视频及关联记录，去重且最多四个并发请求
+ok 74 - 通过真实 SDK 续签提交音视频及关联记录，去重且最多四个并发请求
+  ---
+  duration_ms: 93.0459
+  type: 'test'
+  ...
+# Subtest: partial edits do not inject defaults into untouched score or task properties
+ok 75 - partial edits do not inject defaults into untouched score or task properties
+  ---
+  duration_ms: 6.7494
+  type: 'test'
+  ...
+# Subtest: private uploads are readable only by their owner while teacher drafts remain hidden
+ok 76 - private uploads are readable only by their owner while teacher drafts remain hidden
+  ---
+  duration_ms: 0.351
+  type: 'test'
+  ...
+# Subtest: published teacher scores follow their assigned class and empty means all classes
+ok 77 - published teacher scores follow their assigned class and empty means all classes
+  ---
+  duration_ms: 0.1479
+  type: 'test'
+  ...
+# Subtest: local upload URLs can be saved by real score, recording and submission forms
+ok 78 - local upload URLs can be saved by real score, recording and submission forms
+  ---
+  duration_ms: 3.6663
+  type: 'test'
+  ...
+# Subtest: required submission items cannot be replaced by unrelated material
+ok 79 - required submission items cannot be replaced by unrelated material
+  ---
+  duration_ms: 0.3244
+  type: 'test'
+  ...
+# Subtest: semester completion counts only records within inclusive date boundaries
+ok 80 - semester completion counts only records within inclusive date boundaries
+  ---
+  duration_ms: 0.3615
+  type: 'test'
+  ...
+# Subtest: class and individual tasks are visible only to matching students
+ok 81 - class and individual tasks are visible only to matching students
+  ---
+  duration_ms: 0.3085
+  type: 'test'
+  ...
+# Subtest: random score assignment is stable for a task and student
+ok 82 - random score assignment is stable for a task and student
+  ---
+  duration_ms: 0.1977
+  type: 'test'
+  ...
+1..82
+# tests 82
+# suites 0
+# pass 82
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4243.8092

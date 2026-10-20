@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useRequireUser } from '@/lib/user-context'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { errorMessage, teachingApi } from '@/components/teaching/api'
 import {
   BarChart,
   Bar,
@@ -17,6 +20,9 @@ import {
 import { Clock, Users, Activity, TrendingUp, Crown, Medal, Award } from 'lucide-react'
 
 interface StatsData {
+  scope: 'personal' | 'class'
+  classes: string[]
+  dateRange: { from: string; to: string }
   overview: {
     totalSeconds: number
     avgSeconds: number
@@ -24,9 +30,11 @@ interface StatsData {
     participationRate: number
     totalSessions: number
     studentCount: number
+    practiceDays: number
+    avgSessionSeconds: number
   }
   ranking: { userId: string; nickname: string; seconds: number; count: number; days: number }[]
-  trend: { date: string; seconds: number }[]
+  trend: { date: string; seconds: number; count: number }[]
 }
 
 function fmtHours(sec: number) {
@@ -41,13 +49,27 @@ export default function StatsPage() {
   const { user } = useRequireUser()
   const [period, setPeriod] = useState<'week' | 'month'>('week')
   const [data, setData] = useState<StatsData | null>(null)
+  const [classes, setClasses] = useState<string[]>([])
+  const [className, setClassName] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [retry, setRetry] = useState(0)
+  const isTeacher = user?.role === 'teacher'
 
   useEffect(() => {
-    fetch(`/api/stats?period=${period}`)
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => {})
-  }, [period])
+    if (!user) return
+    const controller = new AbortController()
+    setLoading(true)
+    setError('')
+    setData(null)
+    const params = new URLSearchParams({ period })
+    if (user.role === 'teacher' && className) params.set('class_name', className)
+    void teachingApi<StatsData>(`/api/stats?${params}`, { signal: controller.signal })
+      .then((result) => { if (!controller.signal.aborted) { setData(result); setClasses(result.classes) } })
+      .catch((cause: unknown) => { if (!controller.signal.aborted) setError(errorMessage(cause)) })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
+    return () => controller.abort()
+  }, [user, period, className, retry])
 
   if (!user) return null
 
@@ -57,27 +79,40 @@ export default function StatsPage() {
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-serif text-3xl font-bold text-foreground">练琴数据分析</h1>
+          <h1 className="font-serif text-3xl font-bold text-foreground">{isTeacher ? '班级练琴统计' : '我的练琴数据'}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            自动汇总全班练习记录 · 仅作教学管理参考，不进入课程成绩
+            {isTeacher ? '自动汇总学生练习记录' : '仅统计你本人的有效练习记录'} · 仅作教学管理参考，不进入课程成绩
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-3">
+        {isTeacher && <Select value={className ? `class:${className}` : 'all'} onValueChange={(value) => setClassName(value === 'all' ? '' : value.slice(6))}><SelectTrigger aria-label="选择统计班级" className="w-44"><SelectValue placeholder="全部学生" /></SelectTrigger><SelectContent><SelectItem value="all">全部学生</SelectItem>{classes.map((name) => <SelectItem key={name} value={`class:${name}`}>{name}</SelectItem>)}</SelectContent></Select>}
         <Tabs value={period} onValueChange={(v) => setPeriod(v as 'week' | 'month')}>
           <TabsList>
             <TabsTrigger value="week">本周</TabsTrigger>
             <TabsTrigger value="month">本月</TabsTrigger>
           </TabsList>
         </Tabs>
+        </div>
       </header>
 
+      {data && <p className="text-sm text-muted-foreground">统计范围：{data.dateRange.from} — {data.dateRange.to}{isTeacher && ` · ${className || '全部学生'} · 共 ${data.overview.totalSessions} 次练习`}</p>}
+      {loading && <p role="status" className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">正在汇总练琴数据…</p>}
+      {error && <div role="alert" className="rounded-xl border border-destructive/40 bg-card p-6"><p className="text-sm text-destructive">{error}</p><Button variant="outline" className="mt-4" onClick={() => setRetry((value) => value + 1)}>重新加载</Button></div>}
+
+      {!error && <>
       {/* 总览卡 */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
+        {(isTeacher ? [
           { icon: Clock, label: '班级总练琴时长', value: o ? fmtHours(o.totalSeconds) : '—' },
           { icon: TrendingUp, label: '人均练琴时长', value: o ? fmtHours(o.avgSeconds) : '—' },
           { icon: Activity, label: '活跃学生数', value: o ? `${o.activeStudents} / ${o.studentCount}` : '—' },
           { icon: Users, label: '参与率', value: o ? `${o.participationRate}%` : '—' },
-        ].map((c) => (
+        ] : [
+          { icon: Activity, label: '练琴频次', value: o ? `${o.practiceDays} 天` : '—' },
+          { icon: TrendingUp, label: '练习次数', value: o ? `${o.totalSessions} 次` : '—' },
+          { icon: Clock, label: '练习总时长', value: o ? fmtHours(o.totalSeconds) : '—' },
+          { icon: Clock, label: '平均单次时长', value: o ? fmtHours(o.avgSessionSeconds) : '—' },
+        ]).map((c) => (
           <div key={c.label} className="rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/40">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <c.icon className="h-4 w-4 text-primary" />
@@ -90,11 +125,11 @@ export default function StatsPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className={`grid gap-6 ${isTeacher ? 'lg:grid-cols-5' : ''}`}>
         {/* 排行榜 */}
-        <div className="rounded-xl border border-border bg-card p-5 lg:col-span-2">
+        {isTeacher && <div className="rounded-xl border border-border bg-card p-5 lg:col-span-2">
           <h2 className="mb-4 font-serif text-lg font-semibold text-foreground">
-            学生时长排名
+            学生练琴情况
             <span className="ml-2 text-xs font-normal text-muted-foreground">
               按{period === 'week' ? '本周' : '本月'}累计时长
             </span>
@@ -130,17 +165,17 @@ export default function StatsPage() {
               <p className="py-8 text-center text-sm text-muted-foreground">该周期内暂无练习数据</p>
             )}
           </div>
-        </div>
+        </div>}
 
         {/* 图表区 */}
-        <div className="space-y-6 lg:col-span-3">
+        <div className={isTeacher ? 'space-y-6 lg:col-span-3' : 'grid gap-6 lg:grid-cols-2'}>
           <div className="rounded-xl border border-border bg-card p-5">
-            <h2 className="mb-4 font-serif text-lg font-semibold text-foreground">时长分布</h2>
+            <h2 className="mb-4 font-serif text-lg font-semibold text-foreground">{isTeacher ? '学生时长分布' : '近 7 日练习次数'}</h2>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data?.ranking.map((r) => ({ name: r.nickname, 时长: Math.round(r.seconds / 60) })) ?? []}>
+                <BarChart data={isTeacher ? data?.ranking.map((r) => ({ name: r.nickname, 时长: Math.round(r.seconds / 60) })) ?? [] : data?.trend.map((day) => ({ name: day.date, 次数: day.count })) ?? []}>
                   <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} />
-                  <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} unit="分" />
+                  <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} unit={isTeacher ? '分' : '次'} allowDecimals={false} />
                   <Tooltip
                     contentStyle={{
                       background: 'var(--card)',
@@ -149,13 +184,13 @@ export default function StatsPage() {
                       color: 'var(--foreground)',
                     }}
                   />
-                  <Bar dataKey="时长" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey={isTeacher ? '时长' : '次数'} fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
           <div className="rounded-xl border border-border bg-card p-5">
-            <h2 className="mb-4 font-serif text-lg font-semibold text-foreground">近 7 日班级总时长趋势</h2>
+            <h2 className="mb-4 font-serif text-lg font-semibold text-foreground">近 7 日{isTeacher ? '班级总' : '练习'}时长趋势</h2>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data?.trend.map((t) => ({ ...t, 分钟: Math.round(t.seconds / 60) })) ?? []}>
@@ -177,6 +212,8 @@ export default function StatsPage() {
           </div>
         </div>
       </div>
+      <p className="text-xs leading-6 text-muted-foreground">按北京时间统计，本周从周一开始，本月从月初开始。练琴频次为有练习记录的天数，练习次数为记录条数，时长不计暂停时间，平均单次时长为总时长除以练习次数。{isTeacher && '人均时长按所选范围的全部学生计算；活跃学生为周期内有练习记录的学生，参与率为活跃学生数除以学生总数。'}</p>
+      </>}
     </div>
   )
 }

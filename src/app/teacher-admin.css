@@ -1,0 +1,39 @@
+/* 教师后台独立主题：变量也覆盖 body 上的 Radix / Sonner portal。 */
+body[data-teacher-admin='true'] {
+  --background: oklch(0.972 0.004 85);
+  --foreground: oklch(0.26 0.012 70);
+  --card: oklch(0.998 0.001 85);
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.54 0.11 75);
+  --primary-foreground: oklch(0.99 0.01 85);
+  --secondary: oklch(0.94 0.008 85);
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(0.954 0.005 85);
+  --muted-foreground: oklch(0.52 0.01 70);
+  --accent: oklch(0.946 0.028 85);
+  --accent-foreground: oklch(0.38 0.075 70);
+  --destructive: oklch(0.54 0.2 27);
+  --border: oklch(0.9 0.006 80);
+  --input: var(--border);
+  --ring: var(--primary);
+  --chart-1: oklch(0.64 0.12 78);
+  --chart-2: oklch(0.55 0.08 155);
+  --chart-3: oklch(0.69 0.06 70);
+  --chart-4: oklch(0.48 0.055 65);
+  --chart-5: oklch(0.77 0.05 90);
+  --sidebar: oklch(0.22 0.012 70);
+  --sidebar-foreground: oklch(0.92 0.012 85);
+  --sidebar-primary: oklch(0.8 0.11 85);
+  --sidebar-primary-foreground: var(--sidebar);
+  --sidebar-accent: oklch(0.29 0.018 70);
+  --sidebar-accent-foreground: var(--sidebar-foreground);
+  --sidebar-border: oklch(0.34 0.015 70);
+  --sidebar-ring: var(--sidebar-primary);
+  font-family: var(--font-sans);
+  color-scheme: light;
+}
+.teacher-sidebar { background: var(--sidebar); color: var(--sidebar-foreground); }
+.teacher-admin select, .teacher-admin input, .teacher-admin textarea { font-family: inherit; }
+.teacher-admin [data-slot='card'] { box-shadow: none; }

@@ -11,7 +11,7 @@ import {
   EUROPE_ERAS,
   type Composer,
 } from '@/lib/composers'
-import { Landmark, Globe2, Info } from 'lucide-react'
+import { Landmark, Globe2, Info, ExternalLink, BookOpen } from 'lucide-react'
 
 type MapKind = 'china' | 'europe'
 
@@ -23,6 +23,7 @@ export default function MusicMapPage() {
 
   const eras = map === 'china' ? CHINA_ERAS : EUROPE_ERAS
   const composers = map === 'china' ? CHINA_COMPOSERS : EUROPE_COMPOSERS
+  const currentEra = eras.find(item => item.id === era)
   const litIds = useMemo(
     () => new Set(composers.filter((c) => c.era === era).map((c) => c.id)),
     [composers, era]
@@ -77,7 +78,7 @@ export default function MusicMapPage() {
             {eras.map((e) => (
               <button
                 key={e.id}
-                onClick={() => setEra(e.id)}
+                onClick={() => { setEra(e.id); setActive(null) }}
                 className={cn(
                   'group flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors',
                   era === e.id ? 'bg-primary/10' : 'hover:bg-muted/50'
@@ -138,14 +139,14 @@ export default function MusicMapPage() {
                   <span className="relative block">
                     <span className="absolute -inset-2 animate-pulse rounded-full bg-primary/20" />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    {c.avatar ? <img
                       src={c.avatar}
                       alt={c.name}
                       className={cn(
                         'relative h-14 w-14 rounded-full border-2 object-cover shadow-lg transition-transform group-hover:scale-110',
                         active?.id === c.id ? 'border-primary' : 'border-primary/50'
                       )}
-                    />
+                    /> : <span className="relative flex h-14 w-14 items-center justify-center rounded-full border-2 border-primary/50 bg-card font-serif text-xl text-primary" aria-label={`${c.name}姓名标识`}>{c.name.slice(0, 1)}</span>}
                   </span>
                   <span className="mt-1.5 block rounded bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur">
                     {c.name}
@@ -161,12 +162,17 @@ export default function MusicMapPage() {
             )}
           </div>
 
+          <div className="mt-4 rounded-xl border border-border bg-card p-5">
+            <div className="flex items-center gap-2 text-primary"><BookOpen className="h-4 w-4" /><h2 className="font-serif text-base font-semibold">{currentEra?.label}{map === 'europe' ? ' · 同期中国音乐' : ' · 音乐人物'}</h2></div>
+            {map === 'europe' ? <><p className="mt-2 text-sm leading-relaxed text-muted-foreground">{currentEra?.chinaContext}</p><div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">{currentEra?.sources?.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline">{source.title}<ExternalLink className="h-3 w-3 shrink-0" /></a>)}</div></> : <p className="mt-2 text-sm leading-relaxed text-muted-foreground">本时代已收录 {litIds.size} 位音乐人物。选择头像阅读资料与来源，再围绕人物作品继续提问。地图点位用于地域分布示意。</p>}
+          </div>
+
           {/* 选中人物信息条 */}
           {active && (
             <div className="mt-4 rounded-xl border border-primary/30 bg-card p-5">
               <div className="flex items-start gap-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={active.avatar} alt={active.name} className="h-16 w-16 rounded-full border-2 border-primary/60 object-cover" />
+                {active.avatar ? <img src={active.avatar} alt={active.name} className="h-16 w-16 rounded-full border-2 border-primary/60 object-cover" /> : <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-primary/60 bg-primary/10 font-serif text-2xl text-primary" aria-label={`${active.name}姓名标识`}>{active.name.slice(0, 1)}</span>}
                 <div className="min-w-0 flex-1">
                   <h3 className="font-serif text-lg font-semibold text-foreground">
                     {active.name}
@@ -182,6 +188,7 @@ export default function MusicMapPage() {
                     <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                     {active.note}
                   </p>
+                  <div className="mt-4 space-y-2 border-t border-border pt-3"><p className="text-xs font-medium text-muted-foreground">资料来源</p>{active.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="flex items-start gap-1.5 text-xs leading-relaxed text-primary underline-offset-4 hover:underline"><ExternalLink className="mt-0.5 h-3 w-3 shrink-0" />{source.title}</a>)}</div>
                 </div>
               </div>
             </div>
@@ -194,7 +201,7 @@ export default function MusicMapPage() {
             <ChatPanel
               key={active.id}
               className="h-[560px]"
-              context={{ kind: 'composer', name: active.name }}
+              context={{ kind: 'composer', composerId: active.id, name: active.name }}
               autoPrompt={`请介绍${map === 'china' ? '中国音乐家' : '作曲家'}${active.name}：生平、创作经历与作品信息、代表作，以及代表作的时代背景。`}
               placeholder={`继续了解${active.name}…`}
             />

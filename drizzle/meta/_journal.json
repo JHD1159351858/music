@@ -8,6 +8,48 @@
       "when": 1791442343157,
       "tag": "0000_orange_wolfpack",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792036953439,
+      "tag": "0001_teaching_workflow",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792123364273,
+      "tag": "0002_requirements_completion",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792123858310,
+      "tag": "0003_backend_service_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792138085244,
+      "tag": "0004_score_pages",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792251697371,
+      "tag": "0005_auth_identities",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792373003006,
+      "tag": "0006_classes",
+      "breakpoints": true
     }
   ]
 }

@@ -101,3 +101,8 @@ Desktop.ini
 .codegraph/
 .coderproj/reduction
 .preview
+
+# Local persistent database, uploaded teaching materials and file signing key.
+/data/
+
+.runtime/

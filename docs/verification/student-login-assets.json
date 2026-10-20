@@ -1,0 +1,175 @@
+{
+  "date": "2026-10-16",
+  "result": [
+    {
+      "port": 5000,
+      "resources": [
+        {
+          "path": "/home/music-journey-motion-v2.webp",
+          "status": 200
+        },
+        {
+          "path": "/home/journey-robot.png",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/6e80a512fe92bee2.css",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/07762c180baff9bd.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/d47446dfdfc5df8d.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/91c24556b11d90ea.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/42ceea2fe823b4e7.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/turbopack-cd603b591770ef8b.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/c4a9859a4264f7b4.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/f3bdffefe114cd43.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/c73fd0a5a6f5ee54.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/042d975e594b8fce.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/4c67aa7741c8eacb.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/30516cc8e40830c5.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/ad8657252d3d3488.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/a6dad97d9634a72d.js",
+          "status": 200
+        },
+        {
+          "path": "/home/music-journey-clean.webp",
+          "status": 200
+        }
+      ],
+      "redirects": [
+        {
+          "path": "/?login=1",
+          "status": 307,
+          "location": "http://localhost:5000/?login=1"
+        },
+        {
+          "path": "/practice?tab=queue",
+          "status": 307,
+          "location": "http://localhost:5000/practice?tab=queue"
+        }
+      ]
+    },
+    {
+      "port": 5003,
+      "resources": [
+        {
+          "path": "/home/music-journey-motion-v2.webp",
+          "status": 200
+        },
+        {
+          "path": "/home/journey-robot.png",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/6e80a512fe92bee2.css",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/07762c180baff9bd.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/d47446dfdfc5df8d.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/91c24556b11d90ea.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/42ceea2fe823b4e7.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/turbopack-cd603b591770ef8b.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/c4a9859a4264f7b4.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/f3bdffefe114cd43.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/c73fd0a5a6f5ee54.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/042d975e594b8fce.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/4c67aa7741c8eacb.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/30516cc8e40830c5.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/ad8657252d3d3488.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/a6dad97d9634a72d.js",
+          "status": 200
+        },
+        {
+          "path": "/home/music-journey-clean.webp",
+          "status": 200
+        }
+      ],
+      "redirects": [
+        {
+          "path": "/?login=1",
+          "status": 307,
+          "location": "http://localhost:5003/?login=1"
+        },
+        {
+          "path": "/practice?tab=queue",
+          "status": 307,
+          "location": "http://localhost:5003/practice?tab=queue"
+        }
+      ]
+    }
+  ]
+}

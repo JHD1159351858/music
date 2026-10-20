@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600" viewBox="0 0 1200 1600">
+  <rect width="1200" height="1600" fill="white"/>
+  <g fill="black" font-family="sans-serif" text-anchor="middle"><text x="600" y="110" font-size="42">MULTIPAGE SCORE - PAGE 1</text><text x="600" y="170" font-size="24">DEMO ONLY - upload and page-turn test</text></g>
+  <defs><g id="staff" stroke="black" stroke-width="2"><path d="M100 0H1100 M100 20H1100 M100 40H1100 M100 60H1100 M100 80H1100"/></g><g id="notes" fill="black" stroke="black" stroke-width="3"><ellipse cx="200" cy="60" rx="14" ry="10"/><path d="M214 60V-20"/><ellipse cx="350" cy="50" rx="14" ry="10"/><path d="M364 50V-30"/><ellipse cx="500" cy="40" rx="14" ry="10"/><path d="M514 40V-40"/><ellipse cx="650" cy="30" rx="14" ry="10"/><path d="M664 30V-50"/><ellipse cx="800" cy="20" rx="14" ry="10"/><path d="M814 20V-60"/><ellipse cx="950" cy="10" rx="14" ry="10"/><path d="M964 10V-70"/></g></defs>
+  <g transform="translate(0 350)"><use href="#staff"/><use href="#notes"/></g><g transform="translate(0 620)"><use href="#staff"/><use href="#notes"/></g><g transform="translate(0 890)"><use href="#staff"/><use href="#notes"/></g><g transform="translate(0 1160)"><use href="#staff"/><use href="#notes"/></g>
+  <text x="600" y="1500" fill="black" font-family="sans-serif" font-size="30" text-anchor="middle">1 / 2 - FIRST PAGE</text>
+</svg>

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ChatPanel } from '@/components/chat-panel'
+import type { AnalysisResult } from '@/lib/score-analysis'
 import {
   BarChart,
   Bar,
@@ -13,6 +14,8 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  LineChart,
+  Line,
 } from 'recharts'
 import {
   Upload,
@@ -20,25 +23,11 @@ import {
   Music2,
   AudioLines,
   Hash,
-  Gauge,
   Palette,
   KeyRound,
   Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
-
-interface AnalysisResult {
-  title: string | null
-  composer: string | null
-  key: string
-  range: string
-  noteCount: number
-  rhythmDensity: string
-  chordColor: string
-  pitchHistogram: Record<string, number>
-  summary: string
-  background?: string
-}
 
 export default function AnalysisPage() {
   const { user } = useRequireUser()
@@ -107,16 +96,15 @@ export default function AnalysisPage() {
 
   const metrics = result
     ? [
-        { icon: KeyRound, label: '调性判断', value: result.key },
-        { icon: AudioLines, label: '音域跨度', value: result.range },
-        { icon: Hash, label: '音符总数', value: String(result.noteCount) },
-        { icon: Gauge, label: '节奏密度', value: result.rhythmDensity },
-        { icon: Palette, label: '和弦色彩倾向', value: result.chordColor },
+        { icon: KeyRound, label: '调性判断', value: result.key ?? '未识别' },
+        { icon: AudioLines, label: '音域跨度', value: result.range ?? '未识别' },
+        { icon: Hash, label: '音符总数', value: result.noteCount === null ? '未识别' : String(result.noteCount) },
+        { icon: Palette, label: '和弦色彩倾向', value: result.chordColor ?? '未识别' },
       ]
     : []
 
   const histogram = result
-    ? Object.entries(result.pitchHistogram).map(([name, count]) => ({ name, 次数: count }))
+    ? Object.entries(result.pitchHistogram ?? {}).map(([name, count]) => ({ name, 次数: count }))
     : []
 
   return (
@@ -124,7 +112,7 @@ export default function AnalysisPage() {
       <header>
         <h1 className="font-serif text-3xl font-bold text-foreground">乐谱分析</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          上传乐谱图片，或直接粘贴 MusicXML / ABC 记谱文本，获得结构化分析与智能讲解
+          上传乐谱图片，或粘贴 MusicXML / ABC 文本；未识别的指标保留空值，乐曲背景优先引用课程资料
         </p>
       </header>
 
@@ -161,7 +149,7 @@ export default function AnalysisPage() {
                 rows={10}
                 value={notation}
                 onChange={(e) => setNotation(e.target.value)}
-                placeholder={'粘贴 MusicXML 或 ABC 记谱文本，例如：\nX:1\nT:小星星\nM:4/4\nK:C\nC C G G | A A G2 |'}
+                placeholder={'粘贴完整 MusicXML（score-partwise）或 ABC 记谱文本，例如：\nX:1\nT:小星星\nM:4/4\nK:C\nC C G G | A A G2 |'}
                 className="font-mono text-xs"
               />
               <Button className="w-full gap-2" onClick={analyzeText} disabled={!notation.trim()}>
@@ -215,13 +203,24 @@ export default function AnalysisPage() {
                   <Music2 className="h-4 w-4 text-primary" />
                   分析摘要
                 </div>
-                <p className="mt-2 text-sm leading-relaxed text-foreground/90">{result.summary}</p>
+                <p className="mt-2 text-sm leading-relaxed text-foreground/90">{result.summary ?? '未识别'}</p>
               </div>
             </div>
 
+            <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-4 text-xs leading-relaxed text-muted-foreground">
+              <p>指标来源：{result.provenance === 'musicxml' ? 'MusicXML 实际音符解析' : result.provenance === 'abc' ? 'ABC 实际音符解析' : '图片模型识别，须对照原谱复核'}</p>
+              {result.warnings.map(warning => <p key={warning}>{warning}</p>)}
+            </div>
+
             <div className="rounded-xl border border-border bg-card p-5">
-              <h3 className="mb-4 font-serif text-base font-semibold text-foreground">音高走向分布</h3>
-              <div className="h-52">
+              <h3 className="mb-2 font-serif text-base font-semibold">音高走向</h3>
+              <p className="mb-4 text-xs text-muted-foreground">横轴为谱面音符顺序，纵轴为 MIDI 音高；多声部按谱面读取顺序展示。</p>
+              {result.pitchSequence?.length ? <div className="h-52"><ResponsiveContainer width="100%" height="100%"><LineChart data={result.pitchSequence}><XAxis dataKey="index" stroke="var(--muted-foreground)" fontSize={12} /><YAxis dataKey="midi" stroke="var(--muted-foreground)" fontSize={12} domain={['dataMin - 2', 'dataMax + 2']} /><Tooltip labelFormatter={label => `第${label}个音符`} formatter={(value, _name, item) => [String(item.payload?.note ?? value), '音高']} contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--foreground)' }} /><Line type="linear" dataKey="midi" stroke="var(--chart-1)" dot={false} isAnimationActive={false} /></LineChart></ResponsiveContainer></div> : <p className="py-8 text-center text-sm text-muted-foreground">未识别，暂无可靠音高数据</p>}
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h3 className="mb-4 font-serif text-base font-semibold text-foreground">音名出现次数</h3>
+              {histogram.length ? <div className="h-52">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={histogram}>
                     <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} />
@@ -237,8 +236,14 @@ export default function AnalysisPage() {
                     <Bar dataKey="次数" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </div>
+              </div> : <p className="py-8 text-center text-sm text-muted-foreground">未识别，暂无可靠统计数据</p>}
             </div>
+
+            <section className="rounded-xl border border-border bg-card p-5">
+              <h3 className="mb-4 font-serif text-lg font-semibold">乐曲导读</h3>
+              <p className="mb-4 text-xs text-muted-foreground">以下内容来自已收录课程资料。未收录的项目显示未识别，可向教师补充询问。</p>
+              <dl className="space-y-4">{[['作品背景', result.workBackground], ['作曲家背景', result.composerBackground], ['创作年代', result.creationYear], ['所属时期', result.period], ['乐曲曲调', result.melody]].map(([label, value]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">{value ?? '未识别（课程资料未收录）'}</dd></div>)}</dl>
+            </section>
           </div>
 
           {/* 右侧：对话窗口 */}
@@ -246,7 +251,7 @@ export default function AnalysisPage() {
             <ChatPanel
               className="h-[640px]"
               context={{ kind: 'score', name: result.title ?? undefined, analysis: result as unknown as Record<string, unknown> }}
-              autoPrompt={`请介绍这份乐谱${result.title ? `《${result.title}》` : ''}的相关信息：作品背景、作曲家背景、创作年代与所属时期。`}
+              autoPrompt={`请依据已收录课程知识介绍这份乐谱${result.title ? `《${result.title}》` : ''}的作品背景、作曲家背景、创作年代、所属时期与乐曲曲调；未收录的项目请明确说明。`}
               placeholder="就这份乐谱继续提问…"
             />
           </div>

@@ -1,0 +1,11 @@
+[
+  {
+    "name": "faas_keepalive.py",
+    "path": "./codeact/scripts/faas_keepalive.py",
+    "description": "FaaS 容器保活脚本，对知音平台和超星认证中心发送 HTTP GET 请求防止容器闲置回收。每次运行结果追加写入 keepalive.log，日志保留最近 500 行自动轮转。由外部日程每 5 分钟触发。",
+    "params": {
+      "result_mode": "auto"
+    },
+    "status": "active"
+  }
+]

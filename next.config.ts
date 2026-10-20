@@ -5,6 +5,15 @@ const nextConfig: NextConfig = {
   /* config options here */
   allowedDevOrigins: ['*.cxiagents.com'],
 
+  async redirects() {
+    return [5000, 5003].map(port => ({
+      source: '/:path*',
+      has: [{ type: 'header' as const, key: 'host', value: `0\\.0\\.0\\.0:${port}` }],
+      destination: `http://localhost:${port}/:path*`,
+      permanent: false,
+    }));
+  },
+
   // 生产关闭浏览器端 sourcemap，减少构建与运行时内存占用
   productionBrowserSourceMaps: false,
 

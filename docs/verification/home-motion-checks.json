@@ -1,0 +1,252 @@
+{
+  "date": "2026-10-16",
+  "url": "http://localhost:5003/",
+  "defaultViewport": {
+    "account": {
+      "bottom": 1244,
+      "height": 40,
+      "left": 0,
+      "right": 1499,
+      "top": 1204,
+      "width": 1499,
+      "x": 0,
+      "y": 1204
+    },
+    "document": [
+      1499,
+      1244
+    ],
+    "motion": "running",
+    "scene": {
+      "bottom": 1244,
+      "height": 1244,
+      "left": 0,
+      "right": 1499,
+      "top": 0,
+      "width": 1499,
+      "x": 0,
+      "y": 0
+    },
+    "styles": [
+      {
+        "animation": "journey-scene-drift",
+        "selector": ".journey-backdrop",
+        "state": "running",
+        "strokeOffset": "0px",
+        "transform": "matrix(1.01745, 0, 0, 1.01745, 0, 1.6677)"
+      },
+      {
+        "animation": "journey-module-float",
+        "selector": ".journey-module",
+        "state": "running",
+        "strokeOffset": "0px",
+        "transform": "matrix(0.999978, 0.00660447, -0.00660447, 0.999978, 0, -6.67616)"
+      },
+      {
+        "animation": "journey-robot-float",
+        "selector": ".journey-robot",
+        "state": "running",
+        "strokeOffset": "0px",
+        "transform": "matrix(0.999822, -0.0188453, 0.0188453, 0.999822, 0, 2.89911)"
+      },
+      {
+        "animation": "journey-current",
+        "selector": ".journey-river-trail",
+        "state": "running",
+        "strokeOffset": "-86.7737px",
+        "transform": "none"
+      },
+      {
+        "animation": "journey-cloud",
+        "selector": ".journey-haze",
+        "state": "running",
+        "strokeOffset": "0px",
+        "transform": "matrix(1.00036, 0, 0, 1.00036, 0.282932, -0.111531)"
+      }
+    ],
+    "viewport": [
+      1499,
+      1244
+    ]
+  },
+  "secondMotionSample": [
+    {
+      "selector": ".journey-backdrop",
+      "strokeOffset": "0px",
+      "transform": "matrix(1.00993, 0, 0, 1.00993, 0, 0.341161)"
+    },
+    {
+      "selector": ".journey-module",
+      "strokeOffset": "0px",
+      "transform": "matrix(0.999985, -0.00541964, 0.00541964, 0.999985, 0, 3.65786)"
+    },
+    {
+      "selector": ".journey-robot",
+      "strokeOffset": "0px",
+      "transform": "matrix(0.999696, -0.0246706, 0.0246706, 0.999696, 0, 4.56833)"
+    },
+    {
+      "selector": ".journey-river-trail",
+      "strokeOffset": "-82.5448px",
+      "transform": "none"
+    },
+    {
+      "selector": ".journey-haze",
+      "strokeOffset": "0px",
+      "transform": "matrix(1.14315, 0, 0, 1.14315, 112.653, -44.4072)"
+    }
+  ],
+  "fullHd": {
+    "account": {
+      "bottom": 1080,
+      "height": 40,
+      "left": 0,
+      "right": 1920,
+      "top": 1040,
+      "width": 1920,
+      "x": 0,
+      "y": 1040
+    },
+    "accountBackground": "rgba(0, 0, 0, 0)",
+    "document": [
+      1920,
+      1080
+    ],
+    "images": [
+      {
+        "height": 941,
+        "loaded": true,
+        "src": "/home/music-journey-motion.webp",
+        "width": 1672
+      },
+      {
+        "height": 1049,
+        "loaded": true,
+        "src": "/home/journey-robot.png",
+        "width": 852
+      }
+    ],
+    "modules": [
+      {
+        "label": "音乐史地图区",
+        "rect": {
+          "bottom": 292.7339782714844,
+          "height": 115.21067810058594,
+          "left": 846.4255981445312,
+          "right": 1196.449462890625,
+          "top": 177.52330017089844,
+          "width": 350.02386474609375,
+          "x": 846.4255981445312,
+          "y": 177.52330017089844
+        }
+      },
+      {
+        "label": "练琴社区",
+        "rect": {
+          "bottom": 360.8594055175781,
+          "height": 115.63641357421876,
+          "left": 1320.597900390625,
+          "right": 1676.495849609375,
+          "top": 245.22299194335935,
+          "width": 355.89794921875,
+          "x": 1320.597900390625,
+          "y": 245.22299194335935
+        }
+      },
+      {
+        "label": "曲库知识图谱",
+        "rect": {
+          "bottom": 756.2133178710938,
+          "height": 262.70416259765625,
+          "left": 174.5545196533203,
+          "right": 387.9923706054687,
+          "top": 493.5091552734375,
+          "width": 213.43785095214844,
+          "x": 174.5545196533203,
+          "y": 493.5091552734375
+        }
+      },
+      {
+        "label": "练习任务引擎",
+        "rect": {
+          "bottom": 898.864501953125,
+          "height": 263.99896240234375,
+          "left": 481.00091552734375,
+          "right": 709.3584594726562,
+          "top": 634.8655395507812,
+          "width": 228.3575439453125,
+          "x": 481.00091552734375,
+          "y": 634.8655395507812
+        }
+      },
+      {
+        "label": "练习档案",
+        "rect": {
+          "bottom": 901.5191650390624,
+          "height": 263.198486328125,
+          "left": 1222.5902099609375,
+          "right": 1450.0191650390625,
+          "top": 638.3206787109375,
+          "width": 227.428955078125,
+          "x": 1222.5902099609375,
+          "y": 638.3206787109375
+        }
+      },
+      {
+        "label": "测评评阅",
+        "rect": {
+          "bottom": 762.1951293945312,
+          "height": 263.55487060546875,
+          "left": 1550.6767578125,
+          "right": 1767.0732421875,
+          "top": 498.6402587890625,
+          "width": 216.396484375,
+          "x": 1550.6767578125,
+          "y": 498.6402587890625
+        }
+      },
+      {
+        "label": "AI助教",
+        "rect": {
+          "bottom": 907.1875,
+          "height": 356.390625,
+          "left": 840.953125,
+          "right": 1079.03125,
+          "top": 550.796875,
+          "width": 238.078125,
+          "x": 840.953125,
+          "y": 550.796875
+        }
+      },
+      {
+        "label": "开始弹奏吧！",
+        "rect": {
+          "bottom": 1047.578125,
+          "height": 86.390625,
+          "left": 777.59375,
+          "right": 1144.3125,
+          "top": 961.1875,
+          "width": 366.71875,
+          "x": 777.59375,
+          "y": 961.1875
+        }
+      }
+    ],
+    "stage": {
+      "bottom": 1080,
+      "height": 1080,
+      "left": 0,
+      "right": 1920,
+      "top": 0,
+      "width": 1920,
+      "x": 0,
+      "y": 0
+    },
+    "viewport": [
+      1920,
+      1080
+    ]
+  },
+  "pauseVerified": true,
+  "mapClickVerified": true
+}

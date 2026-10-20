@@ -1,0 +1,14 @@
+{
+  "fixture": "production build + isolated SQLite + signed synthetic sessions; not real Chaoxing SSO",
+  "checks": [
+    "anonymous, student and forged user_id requests cannot access teacher aggregation APIs",
+    "teacher login defaults to /teacher and the actual second-password endpoint creates an HttpOnly session",
+    "legacy teacher entry links redirect into matching backend modules",
+    "maintained class membership and score publication control the actual student library",
+    "class task assignment, student submission and practice records produce the expected overview statistics",
+    "zero is a valid reviewed grade and the actual student detail receives the teacher feedback",
+    "class/search/status filtering, page clamping and invalid references are enforced by HTTP APIs",
+    "all management pages, the retained teaching tool and student library return loadable script/style/image resources"
+  ],
+  "assetsChecked": 217
+}

@@ -1,0 +1,1 @@
+ALTER TABLE "scores" ADD COLUMN "pages" jsonb DEFAULT '[]'::jsonb NOT NULL;

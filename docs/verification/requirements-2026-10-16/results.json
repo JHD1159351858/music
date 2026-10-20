@@ -1,0 +1,43 @@
+{
+  "checks": [
+    "class publication is enforced by real HTTP API",
+    "teacher adds course knowledge through the actual form",
+    "ABC displays real metrics, pitch trajectory, unknown background and grounded SSE fallback",
+    "real browser microphone recording, pause timer, zoom, fullscreen and saved recording work together",
+    "private teacher message, teacher reply, per-teacher focus and complete text export work in browser",
+    "student statistics show personal records without exposing another student",
+    "student uploads real WAV/MP4; teacher decodes and plays both, grades, and student receives feedback",
+    "knowledge and map pages render; mobile knowledge has no horizontal overflow",
+    "no browser page errors during the verified workflows"
+  ],
+  "screenshots": [
+    "teacher-knowledge.png",
+    "student-analysis.png",
+    "teacher-community.png",
+    "student-stats.png",
+    "teacher-review.png",
+    "student-map.png",
+    "student-knowledge-mobile.png"
+  ],
+  "media": [
+    {
+      "type": "audio",
+      "duration": 1,
+      "paused": false,
+      "readyState": 4
+    },
+    {
+      "type": "video",
+      "duration": 1,
+      "paused": false,
+      "readyState": 4
+    }
+  ],
+  "liveLLM": {
+    "status": 200,
+    "elapsedMs": 12,
+    "chunks": 1,
+    "stream": "data: {\"sources\":[{\"title\":\"连奏练习\",\"url\":null}]}\n\ndata: {\"error\":\"智能讲解服务暂时不可用，请稍后重试。课程知识和地图资料仍可直接查阅。\"}\n\n"
+  },
+  "auth": "isolated signed fixture; real Chaoxing SSO not tested"
+}

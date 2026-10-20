@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import { fitScoreScale, zoomScoreAt, pinchScoreView, INITIAL_SCORE_VIEW } from './score-viewport-math'
+
+test('portrait and landscape scores fit completely inside the available viewport', () => {
+  for (const [image, viewport] of [
+    [{ width: 1000, height: 1080 }, { width: 1109, height: 980 }],
+    [{ width: 2400, height: 900 }, { width: 1109, height: 980 }],
+    [{ width: 1000, height: 3000 }, { width: 390, height: 600 }],
+  ]) {
+    const scale = fitScoreScale(image, viewport)
+    assert.ok(image.width * scale <= viewport.width - 48)
+    assert.ok(image.height * scale <= viewport.height - 48)
+  }
+})
+
+test('wheel zoom keeps the score point under the pointer and preserves a dragged position', () => {
+  const before = { zoom: 1, x: 40, y: -20 }
+  const pointer = { x: 120, y: 80 }
+  const after = zoomScoreAt(before, 2, pointer)
+  assert.deepEqual(after, { zoom: 2, x: -40, y: -120 })
+  assert.equal((pointer.x - before.x) / before.zoom, (pointer.x - after.x) / after.zoom)
+  assert.equal((pointer.y - before.y) / before.zoom, (pointer.y - after.y) / after.zoom)
+})
+
+test('two-finger pinch combines zoom with movement of the fingers midpoint', () => {
+  const after = pinchScoreView(INITIAL_SCORE_VIEW, { x: 50, y: 50 }, 100, { x: 80, y: 90 }, 200)
+  assert.deepEqual(after, { zoom: 2, x: -20, y: -10 })
+  assert.equal(zoomScoreAt(INITIAL_SCORE_VIEW, 100, { x: 0, y: 0 }).zoom, 4)
+  assert.equal(zoomScoreAt(INITIAL_SCORE_VIEW, 0.001, { x: 0, y: 0 }).zoom, 0.25)
+})

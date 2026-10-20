@@ -1,6 +1,6 @@
 # 项目上下文
 
-「知音」教学智能体：面向音乐教学场景的全栈应用（学生/教师双角色，演示模式选身份进入，无真实登录）。
+「知音」教学智能体：面向音乐教学场景的全栈应用（学生/教师双角色，接入超星统一认证，教师额外安全密码校验；配置见 `docs/chaoxing-auth.md`）。
 
 ## 五大板块与代码位置
 - 练琴记录：`src/app/(app)/practice/`（列表页 + `session/[id]/` 沉浸练习页：计时 + MediaRecorder 录音 + 结束存档）
@@ -10,10 +10,10 @@
 - 数据分析：`src/app/(app)/stats/` + `/api/stats`（教师端聚合统计）
 
 ## 关键约定
-- 身份：localStorage 存演示身份（`src/lib/user-context.tsx`），昵称制不存真实姓名
-- 数据：Supabase（PolarDB 多租户），schema 在 `src/db/schema.ts`，迁移在 `drizzle/`；业务 CRUD 一律走 `/api/*` + `createSupabaseServer()`（`src/lib/supabase-server.ts`）
+- 身份：超星认证中心的一次性票据由服务端验证，再建立 HttpOnly 签名会话；教师须额外安全密码校验。`src/lib/user-context.tsx` 仅读取服务端会话，不信任 localStorage 或请求 user_id 作为身份来源。登录账号区优先显示真实姓名，已验票的姓名、学工号、学校等白名单资料存于仅服务端可访问的 `auth_identities`；本人通过 `/api/auth/session` 读取。社区仍使用 `profiles.nickname`，不公开私有认证资料。
+- 数据：本机默认 SQLite（`data/zhiyin.sqlite`，`src/lib/local-database.ts` 自动建库），可设 `ZHIYIN_DATA_DIR` 指定持久目录；业务 CRUD 一律走 `/api/*` + `createSupabaseServer()` 统一数据入口。`ZHIYIN_STORAGE_MODE=supabase` 可使用原 Supabase／PolarDB 配置；远程 schema 在 `src/db/schema.ts`，迁移在 `drizzle/`。
 - LLM：`coder-coding-dev-sdk` LLMClient，对话统一走 `/api/chat`（SSE 流式），前端用 `src/components/chat-panel.tsx`（Reader 逐块渲染）
-- 文件：录音/谱图上传走 `/api/upload`（StorageClient 对象存储，存 fileId）
+- 文件：录音／谱图／视频上传走 `/api/upload`。本地模式落盘 `data/uploads`，使用持久签名密钥与 `/api/files/[id]` 读取；远程模式使用 StorageClient。均存 fileId。
 - 设计：深色音乐厅风格，规则见 `DESIGN.md`；只用语义主题变量，禁硬编码颜色
 
 ### 版本技术栈

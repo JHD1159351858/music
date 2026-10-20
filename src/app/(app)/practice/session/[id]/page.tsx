@@ -1,443 +1,257 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { useUser } from '@/lib/user-context'
-import { Button } from '@/components/ui/button'
-import { Pause, Play, Square, Music4, FileMusic, ZoomIn, ZoomOut, Maximize, X, GripHorizontal } from 'lucide-react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { ArrowLeft, FileMusic, Loader2, Maximize, MicOff, Minimize, Pause, Play, RotateCcw, Sparkles, Square, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { toast } from 'sonner'
+import { useUser } from '@/lib/user-context'
+import type { Score } from '@/lib/teaching-types'
+import { getScorePages } from '@/lib/score-pages'
+import { Button } from '@/components/ui/button'
+import { ChatPanel } from '@/components/chat-panel'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { savePracticeDraft, type PracticeSaveDraft } from '@/components/practice/practice-save'
+import { ScoreViewport } from '@/components/practice/score-viewport'
+import { ScorePageNavigation } from '@/components/practice/score-page-navigation'
+import { INITIAL_SCORE_VIEW, MAX_SCORE_ZOOM, MIN_SCORE_ZOOM, zoomScoreAt } from '@/components/practice/score-viewport-math'
 
-interface Score {
-  id: string
-  title: string
-  composer: string
-  difficulty: string
-  tips: string | null
-  image_url: string | null
-  source: string
-}
+type MicStatus = 'preparing' | 'recording' | 'denied' | 'stopped'
+const pad = (n: number) => String(n).padStart(2, '0')
 
-function pad(n: number) {
-  return String(n).padStart(2, '0')
+async function jsonResponse<T>(res: Response): Promise<T> {
+  const data: unknown = await res.json()
+  if (!res.ok) throw new Error(typeof data === 'object' && data !== null && 'error' in data && typeof data.error === 'string' ? data.error : '请求失败，请重试')
+  return data as T
 }
 
 export default function PracticeSessionPage() {
+  return <Suspense fallback={<p className="py-12 text-center text-muted-foreground">正在准备练习…</p>}><PracticeSession /></Suspense>
+}
+
+function PracticeSession() {
   const { id } = useParams<{ id: string }>()
   const { user } = useUser()
   const router = useRouter()
-
+  const params = useSearchParams()
+  const taskId = params.get('task_id')
   const [score, setScore] = useState<Score | null>(null)
-  const [elapsed, setElapsed] = useState(0) // 有效练习秒数（不含暂停）
+  const [loadError, setLoadError] = useState('')
+  const [elapsed, setElapsed] = useState(0)
   const [paused, setPaused] = useState(false)
   const [pauseCount, setPauseCount] = useState(0)
-  const [recording, setRecording] = useState(false)
+  const [mic, setMic] = useState<MicStatus>('preparing')
+  const [micError, setMicError] = useState('')
   const [saving, setSaving] = useState(false)
-  const [micDenied, setMicDenied] = useState(false)
-  const [scoreHalf, setScoreHalf] = useState(false)
-
-  const startTimeRef = useRef<Date>(new Date())
+  const [ended, setEnded] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [scoreView, setScoreView] = useState(INITIAL_SCORE_VIEW)
+  const [pageIndex, setPageIndex] = useState(0)
+  const [scoreFocused, setScoreFocused] = useState(false)
+  const [assistantOpen, setAssistantOpen] = useState(false)
+  const [leaveOpen, setLeaveOpen] = useState(false)
   const recorderRef = useRef<MediaRecorder | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
+  const micGenerationRef = useRef(0)
+  const pausedRef = useRef(false)
+  const endedRef = useRef(false)
+  const savingRef = useRef(false)
+  const clockRef = useRef({ startedAt: '', runningSince: 0, accumulatedMs: 0, recordId: '' })
+  const saveDraftRef = useRef<PracticeSaveDraft>({ audioBlob: null, audioUrl: null, audioFileId: null, recordId: null })
+  const cancelMicRequest = useCallback(() => { micGenerationRef.current += 1 }, [])
 
-  // 加载琴谱信息
   useEffect(() => {
-    fetch(`/api/scores?source=teacher`)
-      .then((r) => r.json())
-      .then((list: Score[]) => {
-        const found = list.find((s) => s.id === id)
-        if (found) setScore(found)
-        else {
-          // 可能在学生自己的谱里
-          if (user) {
-            fetch(`/api/scores?source=student&owner=${user.id}`)
-              .then((r) => r.json())
-              .then((mine: Score[]) => setScore(mine.find((s) => s.id === id) ?? null))
-          }
-        }
+    if (!user) return
+    const controller = new AbortController()
+    fetch(`/api/scores/${id}?user_id=${user.id}`, { signal: controller.signal })
+      .then((res) => jsonResponse<Score>(res))
+      .then((loaded) => { setScore(loaded); setPageIndex(0); setScoreView(INITIAL_SCORE_VIEW) })
+      .catch((cause: unknown) => {
+        if (!controller.signal.aborted) setLoadError(cause instanceof Error ? cause.message : '琴谱加载失败')
       })
-      .catch(() => {})
+    return () => controller.abort()
   }, [id, user])
 
-  // 进入页面自动开始计时 + 录音
+  const startMic = useCallback(async () => {
+    if (endedRef.current) return
+    const generation = ++micGenerationRef.current
+    setMic('preparing')
+    setMicError('')
+    try {
+      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') throw new Error('当前浏览器不支持在线录音，请使用支持麦克风的浏览器。')
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      if (generation !== micGenerationRef.current || endedRef.current) {
+        stream.getTracks().forEach((track) => track.stop())
+        return
+      }
+      if (recorderRef.current && recorderRef.current.state !== 'inactive') recorderRef.current.stop()
+      streamRef.current?.getTracks().forEach((track) => track.stop())
+      streamRef.current = stream
+      const preferred = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find((type) => MediaRecorder.isTypeSupported(type))
+      const recorder = preferred ? new MediaRecorder(stream, { mimeType: preferred }) : new MediaRecorder(stream)
+      recorderRef.current = recorder
+      recorder.ondataavailable = (event: BlobEvent) => { if (event.data.size) chunksRef.current.push(event.data) }
+      recorder.onerror = () => { setMic('denied'); setMicError('录音发生错误，可重新启用麦克风。') }
+      recorder.start(1000)
+      if (pausedRef.current) recorder.pause()
+      setMic('recording')
+    } catch (cause: unknown) {
+      if (generation !== micGenerationRef.current) return
+      setMic('denied')
+      setMicError(cause instanceof Error && cause.name !== 'NotAllowedError' ? cause.message : '未获得麦克风权限。允许访问后可重新启用，计时仍会保留。')
+    }
+  }, [])
+
   useEffect(() => {
-    startTimeRef.current = new Date()
-    let stream: MediaStream | null = null
-    navigator.mediaDevices
-      ?.getUserMedia({ audio: true })
-      .then((s) => {
-        stream = s
-        const rec = new MediaRecorder(s)
-        chunksRef.current = []
-        rec.ondataavailable = (e) => {
-          if (e.data.size > 0) chunksRef.current.push(e.data)
-        }
-        rec.start(1000)
-        recorderRef.current = rec
-        setRecording(true)
-      })
-      .catch(() => {
-        setMicDenied(true)
-        toast.warning('未获得麦克风权限，本次练习将不录音')
-      })
+    if (!score) return
+    const now = Date.now()
+    clockRef.current = { startedAt: new Date(now).toISOString(), runningSince: now, accumulatedMs: 0, recordId: crypto.randomUUID() }
+    endedRef.current = false
+    pausedRef.current = false
+    void startMic()
+    const interval = setInterval(() => {
+      if (endedRef.current || pausedRef.current) return
+      const clock = clockRef.current
+      setElapsed(Math.floor((clock.accumulatedMs + Date.now() - clock.runningSince) / 1000))
+    }, 250)
     return () => {
-      recorderRef.current?.state !== 'inactive' && recorderRef.current?.stop()
-      stream?.getTracks().forEach((t) => t.stop())
+      clearInterval(interval)
+      cancelMicRequest()
+      if (recorderRef.current && recorderRef.current.state !== 'inactive') recorderRef.current.stop()
+      streamRef.current?.getTracks().forEach((track) => track.stop())
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [score, startMic, cancelMicRequest])
 
-  // 计时器（暂停时不走）
   useEffect(() => {
-    if (paused) return
-    const t = setInterval(() => setElapsed((v) => v + 1), 1000)
-    return () => clearInterval(t)
-  }, [paused])
-
-  const togglePause = useCallback(() => {
-    setPaused((p) => {
-      const next = !p
-      const rec = recorderRef.current
-      if (rec) {
-        if (next && rec.state === 'recording') rec.pause()
-        if (!next && rec.state === 'paused') rec.resume()
-      }
-      if (next) setPauseCount((c) => c + 1)
-      return next
-    })
-  }, [])
-
-  const finish = useCallback(async () => {
-    if (!user || !score || saving) return
-    setSaving(true)
-
-    // 停止录音并上传
-    const rec = recorderRef.current
-    let audioUrl: string | null = null
-    if (rec && rec.state !== 'inactive') {
-      const stopped = new Promise<void>((resolve) => {
-        rec.onstop = () => resolve()
-      })
-      rec.stop()
-      await stopped
-      const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' })
-      if (blob.size > 1000) {
-        try {
-          const fd = new FormData()
-          fd.append('file', new File([blob], `practice_${Date.now()}.webm`, { type: blob.type }))
-          const res = await fetch('/api/upload', { method: 'POST', body: fd })
-          if (res.ok) audioUrl = (await res.json()).url
-        } catch {
-          toast.warning('录音上传失败，仅保存练习记录')
-        }
-      }
+    if (!scoreFocused) return
+    const exit = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setScoreFocused(false)
+      setScoreView(INITIAL_SCORE_VIEW)
     }
+    document.addEventListener('keydown', exit)
+    return () => document.removeEventListener('keydown', exit)
+  }, [scoreFocused])
 
-    const res = await fetch('/api/practice', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: user.id,
-        score_id: score.id,
-        piece_title: score.title,
-        source: score.source,
-        started_at: startTimeRef.current.toISOString(),
-        duration_seconds: elapsed,
-        pause_count: pauseCount,
-        audio_url: audioUrl,
-      }),
-    })
-    if (res.ok) {
-      toast.success('练习记录已保存')
-      router.replace('/practice')
-    } else {
-      toast.error('保存失败，请重试')
+  const togglePause = () => {
+    if (endedRef.current) return
+    const next = !pausedRef.current
+    const clock = clockRef.current
+    if (next) {
+      clock.accumulatedMs += Date.now() - clock.runningSince
+      clock.runningSince = 0
+      setPauseCount((count) => count + 1)
+      setElapsed(Math.floor(clock.accumulatedMs / 1000))
+    } else { clock.runningSince = Date.now() }
+    pausedRef.current = next
+    setPaused(next)
+    const recorder = recorderRef.current
+    if (next && recorder?.state === 'recording') recorder.pause()
+    if (!next && recorder?.state === 'paused') recorder.resume()
+  }
+
+  const captureRecording = async () => {
+    if (saveDraftRef.current.audioBlob) return
+    const recorder = recorderRef.current
+    ++micGenerationRef.current
+    if (recorder && recorder.state !== 'inactive') {
+      await new Promise<void>((resolve) => {
+        recorder.addEventListener('stop', () => resolve(), { once: true })
+        recorder.stop()
+      })
+    }
+    streamRef.current?.getTracks().forEach((track) => track.stop())
+    const blob = new Blob(chunksRef.current, { type: recorder?.mimeType || 'audio/webm' })
+    if (blob.size) saveDraftRef.current.audioBlob = blob
+    setMic('stopped')
+  }
+
+  const finish = async () => {
+    if (!user || !score || savingRef.current) return
+    savingRef.current = true
+    setSaving(true)
+    setSaveError('')
+    setLeaveOpen(false)
+    const clock = clockRef.current
+    if (!endedRef.current) {
+      if (!pausedRef.current) clock.accumulatedMs += Date.now() - clock.runningSince
+      clock.runningSince = 0
+      endedRef.current = true
+      setEnded(true)
+      setElapsed(Math.floor(clock.accumulatedMs / 1000))
+    }
+    try {
+      await captureRecording()
+      const recordId = await savePracticeDraft(saveDraftRef.current, async (blob) => {
+        const body = new FormData()
+        const extension = blob.type.includes('mp4') ? 'm4a' : 'webm'
+        body.append('file', new File([blob], `practice_${clock.recordId}.${extension}`, { type: blob.type }))
+        body.append('user_id', user.id)
+        return jsonResponse<{ url: string; fileId: string }>(await fetch('/api/upload', { method: 'POST', body }))
+      }, async (audio) => jsonResponse<{ id: string }>(await fetch('/api/practice', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: clock.recordId, user_id: user.id, score_id: score.id, piece_title: score.title, source: score.source,
+          started_at: clock.startedAt, duration_seconds: Math.floor(clock.accumulatedMs / 1000), pause_count: pauseCount, ...audio }),
+      })))
+      toast.success(saveDraftRef.current.audioUrl ? '练习与录音已存档' : '练习记录已存档（本次未录音）')
+      router.replace(taskId ? `/tasks/${encodeURIComponent(taskId)}?record_id=${encodeURIComponent(recordId)}` : '/practice?tab=history')
+    } catch (cause: unknown) {
+      setSaveError(cause instanceof Error ? cause.message : '保存失败，请重试')
+      toast.error('存档未完成，录音保留在当前页面，可重试保存')
+      savingRef.current = false
       setSaving(false)
     }
-  }, [user, score, saving, elapsed, pauseCount, router])
+  }
 
-  const h = Math.floor(elapsed / 3600)
-  const m = Math.floor((elapsed % 3600) / 60)
-  const s = elapsed % 60
+  const toggleScoreFocus = () => {
+    setScoreFocused((focused) => !focused)
+    setScoreView(INITIAL_SCORE_VIEW)
+    setAssistantOpen(false)
+  }
+
+  const leave = async () => {
+    endedRef.current = true
+    ++micGenerationRef.current
+    if (recorderRef.current?.state !== 'inactive') recorderRef.current?.stop()
+    streamRef.current?.getTracks().forEach((track) => track.stop())
+    router.replace(taskId ? `/tasks/${encodeURIComponent(taskId)}` : '/practice')
+  }
+
+  const pages = score ? getScorePages(score) : []
+  const page = pages[pageIndex] ?? pages[0]
+  const pdf = page?.file_type === 'application/pdf' || /\.pdf(?:\?|$)/i.test(page?.file_name ?? page?.image_url ?? '')
+  const changePage = (index: number) => { setPageIndex(index); setScoreView(INITIAL_SCORE_VIEW) }
+  const time = `${pad(Math.floor(elapsed / 3600))}:${pad(Math.floor((elapsed % 3600) / 60))}:${pad(elapsed % 60)}`
+
+  if (loadError) return <div className="space-y-4 py-16 text-center"><p role="alert" className="text-destructive">{loadError}</p><Button onClick={() => router.replace('/practice')}>返回琴谱库</Button></div>
+
+  const zoomControls = <div className="flex items-center gap-1 rounded-lg border border-border px-1"><Button variant="ghost" size="icon" aria-label="缩小谱面" onClick={() => setScoreView(view => zoomScoreAt(view, view.zoom - 0.25, { x: 0, y: 0 }))} disabled={scoreView.zoom <= MIN_SCORE_ZOOM}><ZoomOut className="h-4 w-4" /></Button><button onClick={() => setScoreView(INITIAL_SCORE_VIEW)} className="flex min-w-20 flex-col items-center px-1 py-1 text-xs text-muted-foreground" title="完整显示曲谱并居中"><span>适应屏幕</span><span className="font-mono text-[10px] tabular-nums">{Math.round(scoreView.zoom * 100)}%</span></button><Button variant="ghost" size="icon" aria-label="放大谱面" onClick={() => setScoreView(view => zoomScoreAt(view, view.zoom + 0.25, { x: 0, y: 0 }))} disabled={scoreView.zoom >= MAX_SCORE_ZOOM}><ZoomIn className="h-4 w-4" /></Button></div>
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      {/* 顶部信息栏 */}
-      <div className="flex items-center justify-between border-b border-border px-8 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
-            <Music4 className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="font-serif text-lg font-semibold text-foreground">
-              {score?.title ?? '加载中…'}
-            </div>
-            <div className="text-xs text-muted-foreground">{score?.composer}</div>
-          </div>
-        </div>
-        {/* 录音状态 */}
-        <div className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-sm">
-          {recording && !paused ? (
-            <>
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-70" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-destructive" />
-              </span>
-              <span className="text-foreground">录音中</span>
-            </>
-          ) : paused ? (
-            <>
-              <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-              <span className="text-muted-foreground">已暂停</span>
-            </>
-          ) : (
-            <>
-              <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/50" />
-              <span className="text-muted-foreground">{micDenied ? '未录音' : '准备中'}</span>
-            </>
-          )}
-        </div>
+    <div className="fixed inset-0 z-50 flex h-dvh flex-col overflow-hidden bg-background text-foreground">
+      <header className={`${scoreFocused ? 'hidden' : 'flex'} shrink-0 flex-wrap items-center gap-3 border-b border-border bg-card px-4 py-3 md:px-6`}>
+        <Button variant="ghost" size="icon" disabled={saving} onClick={() => setLeaveOpen(true)} aria-label="返回琴谱库"><ArrowLeft className="h-5 w-5" /></Button>
+        <div className="min-w-0 flex-1"><h1 className="truncate font-serif text-lg font-semibold">{score?.title ?? '正在准备琴谱…'}</h1><p className="truncate text-xs text-muted-foreground">{score?.composer}{taskId ? ' · 任务练习' : ' · 沉浸练习'}</p></div>
+        <ScorePageNavigation index={pageIndex} count={pages.length} onChange={changePage} />
+        {zoomControls}
+        <Button variant="outline" size="sm" onClick={toggleScoreFocus} className="gap-2"><Maximize className="h-4 w-4" />全屏看谱</Button>
+        <Button variant={assistantOpen ? 'secondary' : 'ghost'} size="sm" onClick={() => setAssistantOpen((v) => !v)} className="gap-2"><Sparkles className="h-4 w-4" /><span className="hidden sm:inline">AI 助教</span></Button>
+      </header>
+      {!scoreFocused && score?.tips && <div className="shrink-0 border-b border-border bg-primary/5 px-5 py-2 text-xs leading-relaxed text-primary">教师提醒：{score.tips}</div>}
+      <div className="relative flex min-h-0 flex-1">
+        {scoreFocused && <div role="toolbar" aria-label="全屏看谱控制" className="absolute left-2 right-2 top-2 z-20 flex flex-wrap items-center justify-end gap-2 rounded-lg bg-card/95 p-1 shadow-sm sm:left-auto"><ScorePageNavigation index={pageIndex} count={pages.length} onChange={changePage} />{zoomControls}<Button variant="outline" size="sm" onClick={toggleScoreFocus} className="gap-2" title="退出全屏看谱（Esc）"><Minimize className="h-4 w-4" />退出全屏</Button></div>}
+        <section aria-label="琴谱显示区域" className={`min-h-0 min-w-0 flex-1 overflow-hidden bg-muted/20 ${scoreFocused ? pages.length > 1 ? 'pt-28 sm:pt-16' : 'pt-16' : ''}`}>
+          {!score ? <div className="flex h-full items-center justify-center gap-3 text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin" />正在加载琴谱…</div> : page?.image_url ? pdf ? <iframe src={`${page.image_url.split('#')[0]}#${scoreView.zoom === 1 ? 'view=Fit&zoom=page-fit' : `zoom=${Math.round(scoreView.zoom * 100)}`}`} title={`${score.title}完整 PDF 琴谱`} className="h-full min-h-full w-full border-0" /> : <ScoreViewport key={`${score.id}-${pageIndex}`} src={page.image_url} title={`${score.title}${pages.length > 1 ? `第 ${pageIndex + 1} 页` : ''}`} view={scoreView} onChange={setScoreView} /> : <div className="flex h-full min-h-72 flex-col items-center justify-center gap-4 p-8 text-center"><FileMusic className="h-14 w-14 text-primary/40" /><h2 className="font-serif text-2xl">{score.title}</h2><p className="max-w-md text-sm leading-relaxed text-muted-foreground">该曲目暂未上传谱面文件。可继续计时练习，或请教师补充琴谱。</p></div>}
+        </section>
+        {assistantOpen && <aside className="absolute inset-y-0 right-0 z-10 flex w-80 max-w-full flex-col border-l border-border bg-background p-3 shadow-xl md:static md:w-96 md:shrink-0"><div className="mb-2 flex items-center justify-between text-sm"><span className="text-primary">知音 · AI 助教</span><Button variant="ghost" size="icon" onClick={() => setAssistantOpen(false)} aria-label="关闭 AI 助教"><X className="h-4 w-4" /></Button></div><ChatPanel className="min-h-0 flex-1" context={{ kind: 'score', name: score?.title }} placeholder="询问指法、节奏与练习方法…" /></aside>}
       </div>
-
-      {/* 中部：计时器 + 谱面（谱面半屏时计时区收缩到左半屏） */}
-      <div className="flex flex-1 overflow-hidden">
-        <div
-          className={`flex flex-col items-center justify-center gap-8 px-8 transition-all duration-300 ${
-            scoreHalf ? 'w-1/2 flex-none' : 'flex-1'
-          }`}
-        >
-          {/* 大号计时器 */}
-          <div className="text-center">
-            <div className="font-mono text-7xl font-bold tabular-nums tracking-wider text-foreground md:text-8xl">
-              {pad(h)}<span className="text-primary">:</span>{pad(m)}<span className="text-primary">:</span>{pad(s)}
-            </div>
-            <p className="mt-3 text-sm text-muted-foreground">
-              本次有效练习时长 · 已暂停 {pauseCount} 次
-            </p>
-          </div>
-          {/* 控制按钮 */}
-          <div className="flex items-center gap-4">
-            <Button
-              size="lg"
-              variant="secondary"
-              className="h-14 gap-2 rounded-full px-8 text-base"
-              onClick={togglePause}
-            >
-              {paused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
-              {paused ? '继续练习' : '暂停'}
-            </Button>
-            <Button
-              size="lg"
-              className="h-14 gap-2 rounded-full px-8 text-base"
-              onClick={finish}
-              disabled={saving}
-            >
-              <Square className="h-5 w-5" />
-              {saving ? '正在存档…' : '结束练习'}
-            </Button>
-          </div>
-        </div>
-
-        {/* 无谱面时的信息侧栏 */}
-        {!score?.image_url && (
-          <div className="hidden w-[420px] flex-col border-l border-border bg-card/40 md:flex">
-            <div className="border-b border-border px-5 py-3 text-sm font-medium text-foreground">
-              琴谱
-            </div>
-            <div className="flex-1 overflow-y-auto p-5">
-              <div className="flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-border p-8 text-center">
-                <Music4 className="mb-4 h-10 w-10 text-primary/50" />
-                <p className="font-serif text-lg text-foreground">{score?.title}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{score?.composer}</p>
-                {score?.tips && (
-                  <div className="mt-6 rounded-lg bg-muted/50 p-4 text-left">
-                    <div className="mb-1 text-xs font-medium text-primary">教学要点</div>
-                    <p className="text-sm leading-relaxed text-muted-foreground">{score.tips}</p>
-                  </div>
-                )}
-                <p className="mt-6 text-xs text-muted-foreground/60">
-                  该曲目暂未上传谱面图片
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 悬浮谱面窗口：可拖动、可缩放 */}
-      {score?.image_url && (
-        <FloatingScore title={score.title} imageUrl={score.image_url} onHalfScreenChange={setScoreHalf} />
-      )}
-    </div>
-  )
-}
-
-/** 可拖动 + 可缩放的悬浮谱面窗口 */
-function FloatingScore({ title, imageUrl, onHalfScreenChange }: { title: string; imageUrl: string; onHalfScreenChange?: (v: boolean) => void }) {
-  const [open, setOpen] = useState(true)
-  const [pos, setPos] = useState({ x: 0, y: 0 })
-  const [zoom, setZoom] = useState(1)
-  const [halfScreen, setHalfScreen] = useState(false)
-  // 窗口拖动状态
-  const winDragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null)
-  // 谱面平移状态
-  const [pan, setPan] = useState({ x: 0, y: 0 })
-  const panDragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null)
-  const [panning, setPanning] = useState(false)
-
-  const clampZoom = (z: number) => Math.min(4, Math.max(0.3, Number(z.toFixed(2))))
-
-  // ---- 窗口拖动（标题栏） ----
-  const onWinPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (halfScreen) return
-    winDragRef.current = { startX: e.clientX, startY: e.clientY, baseX: pos.x, baseY: pos.y }
-    e.currentTarget.setPointerCapture(e.pointerId)
-  }
-  const onWinPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const d = winDragRef.current
-    if (!d) return
-    setPos({ x: d.baseX + e.clientX - d.startX, y: d.baseY + e.clientY - d.startY })
-  }
-  const onWinPointerUp = () => {
-    winDragRef.current = null
-  }
-
-  // ---- 谱面内容拖动平移 ----
-  const onPanPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    panDragRef.current = { startX: e.clientX, startY: e.clientY, baseX: pan.x, baseY: pan.y }
-    e.currentTarget.setPointerCapture(e.pointerId)
-    setPanning(true)
-  }
-  const onPanPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const d = panDragRef.current
-    if (!d) return
-    setPan({ x: d.baseX + e.clientX - d.startX, y: d.baseY + e.clientY - d.startY })
-  }
-  const onPanPointerUp = () => {
-    panDragRef.current = null
-    setPanning(false)
-  }
-
-  const toggleHalfScreen = () => {
-    setHalfScreen((v) => {
-      onHalfScreenChange?.(!v)
-      return !v
-    })
-    setPos({ x: 0, y: 0 })
-  }
-
-  if (!open) {
-    // 收起后保留一个悬浮入口按钮
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 rounded-full border border-primary/40 bg-card px-4 py-2.5 text-sm text-primary shadow-xl transition-transform hover:scale-105"
-      >
-        <FileMusic className="h-4 w-4" />
-        打开琴谱
-      </button>
-    )
-  }
-
-  return (
-    <div
-      className={
-        halfScreen
-          ? 'fixed inset-y-0 right-0 z-[60] flex w-1/2 flex-col overflow-hidden border-l border-primary/30 bg-card shadow-2xl'
-          : 'fixed bottom-6 right-6 z-[60] flex h-[70vh] w-[min(90vw,560px)] flex-col overflow-hidden rounded-xl border border-primary/30 bg-card shadow-2xl'
-      }
-      style={halfScreen ? undefined : { transform: `translate(${pos.x}px, ${pos.y}px)` }}
-    >
-      {/* 标题栏（拖动把手） */}
-      <div
-        className="flex cursor-grab touch-none items-center gap-2 border-b border-border bg-muted/60 px-3 py-2 select-none active:cursor-grabbing"
-        onPointerDown={onWinPointerDown}
-        onPointerMove={onWinPointerMove}
-        onPointerUp={onWinPointerUp}
-        onPointerCancel={onWinPointerUp}
-      >
-        <GripHorizontal className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{title}</span>
-        {/* 按钮区：阻止冒泡，避免触发窗口拖动 */}
-        <div
-          className="flex shrink-0 items-center gap-0.5"
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            onClick={() => setZoom((z) => clampZoom(z - 0.25))}
-            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="缩小"
-          >
-            <ZoomOut className="h-4 w-4" />
-          </button>
-          <span className="w-12 text-center font-mono text-xs tabular-nums text-muted-foreground">
-            {Math.round(zoom * 100)}%
-          </span>
-          <button
-            type="button"
-            onClick={() => setZoom((z) => clampZoom(z + 0.25))}
-            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="放大"
-          >
-            <ZoomIn className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={toggleHalfScreen}
-            className={`rounded p-1.5 hover:bg-muted ${
-              halfScreen ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-            }`}
-            aria-label={halfScreen ? '退出半屏' : '半屏显示'}
-            title={halfScreen ? '退出半屏' : '半屏显示'}
-          >
-            <Maximize className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false)
-              setHalfScreen(false)
-              onHalfScreenChange?.(false)
-            }}
-            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="关闭"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-      {/* 谱面内容区：拖拽平移 + 滚轮缩放（无需修饰键） */}
-      <div
-        className={`relative flex-1 touch-none overflow-hidden bg-muted/20 ${
-          panning ? 'cursor-grabbing' : 'cursor-grab'
-        }`}
-        onPointerDown={onPanPointerDown}
-        onPointerMove={onPanPointerMove}
-        onPointerUp={onPanPointerUp}
-        onPointerCancel={onPanPointerUp}
-        onWheel={(e) => {
-          setZoom((z) => clampZoom(z - Math.sign(e.deltaY) * 0.12))
-        }}
-      >
-        <div
-          className="absolute left-1/2 top-1/2 origin-center"
-          style={{
-            transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoom})`,
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
-            alt={title}
-            className="max-w-[min(88vw,520px)] rounded-md select-none"
-            draggable={false}
-          />
-        </div>
-        <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-background/70 px-3 py-1 text-[11px] text-muted-foreground backdrop-blur">
-          拖动谱面平移 · 滚轮缩放
-        </div>
-      </div>
+      {!scoreFocused && micError && !ended && <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-card px-5 py-2"><p className="text-xs text-muted-foreground">{micError}</p><Button size="sm" variant="outline" onClick={() => void startMic()} className="shrink-0 gap-2"><RotateCcw className="h-3.5 w-3.5" />启用录音</Button></div>}
+      {saveError && <div role="alert" className="shrink-0 border-t border-destructive/30 bg-destructive/5 px-5 py-3 text-sm text-destructive">存档未完成：{saveError}。练习已停止计时，录音仍保留在当前页面，请点击「重试保存」。</div>}
+      <footer className={`${scoreFocused ? 'hidden' : 'flex'} shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border bg-card px-4 py-3 md:px-6`}>
+        <div className="flex items-center gap-5"><div><p className="text-[10px] tracking-wider text-muted-foreground">有效练习时长</p><div role="timer" aria-label="有效练习时长" className="font-mono text-3xl font-semibold tabular-nums tracking-wide text-primary">{time}</div></div><div className="space-y-1"><p className="flex items-center gap-2 text-sm">{mic === 'recording' && !ended ? <><span className={`h-2 w-2 rounded-full ${paused ? 'bg-primary' : 'animate-pulse bg-destructive'}`} />{paused ? '录音暂停' : '正在录音'}</> : <><MicOff className="h-4 w-4 text-muted-foreground" />{ended ? '已结束' : mic === 'preparing' ? '准备录音…' : '未录音'}</>}</p><p className="text-[10px] text-muted-foreground">{paused && !ended ? '计时已暂停' : `已暂停 ${pauseCount} 次`}</p></div></div>
+        <div className="flex items-center gap-2"><Button variant="outline" onClick={togglePause} disabled={!score || ended || saving} className="gap-2">{paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}{paused ? '继续' : '暂停'}</Button><Button onClick={() => void finish()} disabled={!score || saving} className="gap-2">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saveError ? <RotateCcw className="h-4 w-4" /> : <Square className="h-4 w-4" />}{saving ? '正在存档…' : saveError ? '重试保存' : '结束并保存'}</Button></div>
+      </footer>
+      <Dialog open={leaveOpen} onOpenChange={setLeaveOpen}><DialogContent><DialogHeader><DialogTitle>本次练习尚未存档</DialogTitle><DialogDescription>返回将放弃当前录音与计时。如需保留，请结束并保存。</DialogDescription></DialogHeader><div className="flex flex-wrap justify-end gap-2"><Button variant="ghost" onClick={() => setLeaveOpen(false)}>继续练习</Button><Button variant="outline" onClick={() => void leave()}>放弃并返回</Button><Button onClick={() => void finish()} disabled={!score}>结束并保存</Button></div></DialogContent></Dialog>
     </div>
   )
 }

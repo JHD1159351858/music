@@ -1,0 +1,77 @@
+[
+  {
+    "allSceneHotspotsVisible": true,
+    "backgroundFill": "url(\"http://localhost:5000/home/music-journey-clean.webp\")",
+    "document": [
+      1920,
+      1080
+    ],
+    "imageLoaded": true,
+    "naturalSize": [
+      3840,
+      2160
+    ],
+    "rolePanelBackground": "rgba(0, 0, 0, 0)",
+    "scene": {
+      "bottom": 1039.984375,
+      "height": 1039.984375,
+      "width": 1848.875,
+      "x": 35.5625,
+      "y": 0
+    },
+    "source": "http://localhost:5000/home/music-journey-clean.webp",
+    "startClearOfFooter": true,
+    "viewport": [
+      1920,
+      1080
+    ]
+  },
+  {
+    "allSceneHotspotsVisible": true,
+    "document": [
+      2560,
+      1271
+    ],
+    "imageLoaded": true,
+    "rolePanelBackground": "rgba(0, 0, 0, 0)",
+    "scene": {
+      "bottom": 1230.984375,
+      "height": 1230.984375,
+      "right": 2374.21875,
+      "width": 2188.4375,
+      "x": 185.78125,
+      "y": 0
+    },
+    "sceneFullyVisible": true,
+    "source": "http://localhost:5000/home/music-journey-clean.webp",
+    "startClearOfFooter": true,
+    "viewport": [
+      2560,
+      1271
+    ]
+  },
+  {
+    "allSceneHotspotsVisible": true,
+    "document": [
+      1164,
+      1244
+    ],
+    "imageLoaded": true,
+    "rolePanelBackground": "rgba(0, 0, 0, 0)",
+    "scene": {
+      "bottom": 929.375,
+      "height": 654.75,
+      "right": 1164,
+      "width": 1164,
+      "x": 0,
+      "y": 274.625
+    },
+    "sceneFullyVisible": true,
+    "source": "http://localhost:5000/home/music-journey-clean.webp",
+    "startClearOfFooter": true,
+    "viewport": [
+      1164,
+      1244
+    ]
+  }
+]
