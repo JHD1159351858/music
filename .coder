@@ -1,5 +1,7 @@
 [project]
 requires = ["nodejs-24"]
+template = "nextjs"
+version = "0.2.0"
 
 [dev]
 build = ["bash", "./scripts/prepare.sh"]

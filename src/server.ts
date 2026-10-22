@@ -3,8 +3,8 @@ import { parse } from 'url';
 import next from 'next';
 
 const dev = process.env.CODER_PROJECT_ENV !== 'PROD';
-const hostname = process.env.HOSTNAME || 'localhost';
-const port = parseInt(process.env.PORT || '5000', 10);
+const hostname = process.env.HOSTNAME || '0.0.0.0';
+const port = parseInt(process.env.PORT || process.env.DEPLOY_RUN_PORT || '5000', 10);
 const LOG_LEVEL = process.env.LOG_LEVEL || 'debug';
 
 // Create Next.js app
