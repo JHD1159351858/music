@@ -8,11 +8,13 @@ interface ReceiptFile {
   fileId: string
   ownerId: string
   fileType: string
+  purpose?: 'map-avatar'
 }
 
 interface ReceiptTarget {
   fileId: string
   ownerId: string
+  purpose?: 'map-avatar'
 }
 
 interface ReceiptPayload {
@@ -21,6 +23,7 @@ interface ReceiptPayload {
   o: string
   t: string
   e: number
+  p?: 'map-avatar'
 }
 
 function signature(encoded: string): string {
@@ -28,7 +31,7 @@ function signature(encoded: string): string {
 }
 
 export function createScoreUploadReceipt(file: ReceiptFile, now = Date.now()): string {
-  const payload: ReceiptPayload = { v: 1, f: file.fileId, o: file.ownerId, t: file.fileType, e: now + LIFETIME_MS }
+  const payload: ReceiptPayload = { v: 1, f: file.fileId, o: file.ownerId, t: file.fileType, e: now + LIFETIME_MS, ...(file.purpose ? { p: file.purpose } : {}) }
   const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url')
   return `${encoded}.${signature(encoded)}`
 }
@@ -44,6 +47,7 @@ export function verifyScoreUploadReceipt(receipt: string | null | undefined, tar
     if (!value || typeof value !== 'object') return null
     const payload = value as Partial<ReceiptPayload>
     if (payload.v !== 1 || payload.f !== target.fileId || payload.o !== target.ownerId || typeof payload.t !== 'string' || !payload.t || typeof payload.e !== 'number' || !Number.isFinite(payload.e) || payload.e <= now) return null
+    if (target.purpose && payload.p !== target.purpose) return null
     return payload.t
   } catch { return null }
 }

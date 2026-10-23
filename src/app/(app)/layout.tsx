@@ -16,7 +16,6 @@ import {
   LogOut,
   House,
   ClipboardList,
-  BookOpen,
   UserRound,
 } from 'lucide-react'
 
@@ -24,7 +23,6 @@ const NAV = [
   { href: '/', label: '知音首页', icon: House, roles: ['student', 'teacher'] },
   { href: '/practice', label: '琴谱与练习', icon: Timer, roles: ['student', 'teacher'] },
   { href: '/tasks', label: '练习任务与评阅', icon: ClipboardList, roles: ['student', 'teacher'] },
-  { href: '/knowledge', label: '课程知识与答疑', icon: BookOpen, roles: ['student', 'teacher'] },
   { href: '/community', label: '练琴社区', icon: MessagesSquare, roles: ['student', 'teacher'] },
   { href: '/map', label: '音乐史地图', icon: Map, roles: ['student', 'teacher'] },
   { href: '/stats', label: '练琴数据', icon: BarChart3, roles: ['student', 'teacher'] },
@@ -55,6 +53,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const items = NAV.filter((n) => n.roles.includes(user.role))
+  const isMap = pathname === '/map'
 
   if (pathname.startsWith('/practice/session/')) return <main>{children}</main>
   if (user.role === 'teacher') return <AdminShell>{children}</AdminShell>
@@ -62,7 +61,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       {/* 侧边导航 */}
-      <aside className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-card/95 backdrop-blur md:inset-y-0 md:right-auto md:w-60 md:flex-col md:border-t-0 md:border-r">
+      <aside className={cn('fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-card/95 backdrop-blur md:inset-y-0 md:right-auto md:flex-col md:border-t-0 md:border-r', isMap ? 'md:w-44' : 'md:w-60')}>
         <Link href="/" className="hidden items-center gap-3 px-6 py-6 md:flex">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
             <Music className="h-5 w-5" />
@@ -113,8 +112,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       {/* 内容区 */}
-      <main className="min-h-screen min-w-0 flex-1 bg-background pb-24 md:ml-60 md:pb-0">
-        <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">{children}</div>
+      <main className={cn('min-h-screen min-w-0 flex-1 bg-background pb-24 md:pb-0', isMap ? 'md:ml-44' : 'md:ml-60')}>
+        <div className={cn('mx-auto px-4 py-6 md:py-8', isMap ? 'max-w-none md:px-5' : 'max-w-6xl md:px-8')}>{children}</div>
       </main>
     </div>
   )

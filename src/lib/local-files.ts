@@ -1,8 +1,9 @@
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises'
+import { mkdir, open, readFile, stat, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { Readable } from 'node:stream'
+import { rasterImageType } from './raster-image'
 
 const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const MAX_FILE_SIZE = 100 * 1024 * 1024
@@ -81,6 +82,16 @@ export async function saveLocalFile(content: Buffer, name: string, contentType: 
 export async function localFileMetadata(fileId: string): Promise<{ ownerId?: string; type: string }> {
   if (!fileId.startsWith('local:')) throw new LocalFileError('文件编号无效', 404)
   return readMetadata(fileId.slice(6))
+}
+
+export async function localRasterFileType(fileId: string): Promise<string | null> {
+  if (!fileId.startsWith('local:')) throw new LocalFileError('文件编号无效', 404)
+  const file = await open(filePaths(fileId.slice(6)).content, 'r')
+  try {
+    const header = Buffer.alloc(32)
+    const { bytesRead } = await file.read(header, 0, header.length, 0)
+    return rasterImageType(header.subarray(0, bytesRead))
+  } finally { await file.close() }
 }
 
 export async function deleteLocalFile(fileId: string): Promise<void> {

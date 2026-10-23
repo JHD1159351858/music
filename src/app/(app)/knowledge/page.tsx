@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { BookOpen, Plus, Pencil, Trash2, ExternalLink } from 'lucide-react'
 import { useRequireUser } from '@/lib/user-context'
 import type { CourseKnowledge } from '@/lib/course-knowledge'
@@ -16,6 +17,7 @@ const empty = { title: '', content: '', keywords: '', source_url: '' }
 
 export default function KnowledgePage() {
   const { user } = useRequireUser()
+  const router = useRouter()
   const [entries, setEntries] = useState<CourseKnowledge[]>([])
   const [draft, setDraft] = useState(empty)
   const [editing, setEditing] = useState<string | null>(null)
@@ -31,8 +33,11 @@ export default function KnowledgePage() {
     catch (cause: unknown) { setError(errorMessage(cause)) }
     finally { setLoading(false) }
   }, [])
-  useEffect(() => { if (user) void load() }, [user, load])
-  if (!user) return null
+  useEffect(() => {
+    if (user?.role === 'student') router.replace('/?assistant=1')
+    else if (user) void load()
+  }, [user, load, router])
+  if (!user || user.role === 'student') return null
   const isTeacher = user.role === 'teacher'
   const visible = entries.filter(entry => `${entry.title} ${entry.content} ${entry.keywords.join(' ')}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
 

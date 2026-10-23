@@ -26,6 +26,7 @@ export async function removeUnusedTeachingFile(supabase: TeachingClient, fileId:
     supabase.from('practice_records').select('id').eq('audio_file_id', fileId).limit(1),
     supabase.from('submissions').select('id').eq('audio_file_id', fileId).limit(1),
     supabase.from('submissions').select('id').eq('video_file_id', fileId).limit(1),
+    supabase.from('map_musicians').select('id').eq('avatar_file_id', fileId).limit(1),
   ])
   for (const reference of references) dbCheck(reference.error)
   if (references.some(reference => reference.data?.length)) return

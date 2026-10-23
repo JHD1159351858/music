@@ -9,7 +9,7 @@ export async function GET(request: Request, context: Context) {
   return apiRoute(async () => {
     const { id } = await context.params
     const { user, supabase } = await actor(request)
-    const { data, error } = await supabase.from('scores').select('*,genre:score_genres(id,name,teacher_id)').eq('id', id).maybeSingle()
+    const { data, error } = await supabase.from('scores').select('*').eq('id', id).maybeSingle()
     dbCheck(error)
     if (!data || !canReadScore(user, data)) throw new ApiError('琴谱不存在或尚未发布', 404)
     return NextResponse.json((await refreshScoreFiles([data]))[0])
@@ -25,16 +25,11 @@ export async function PATCH(request: Request, context: Context) {
     if (!existing.data || existing.data.source !== user.role) throw new ApiError('琴谱不存在或无权编辑', 404)
     const merged = { ...existing.data, ...body }
     if (user.role === 'student') { merged.published = false; merged.target_classes = [] }
-    if (merged.genre_id) {
-      const genre = await supabase.from('score_genres').select('id').eq('id', merged.genre_id).maybeSingle()
-      dbCheck(genre.error)
-      if (!genre.data) throw new ApiError('请选择教师已确认的曲风')
-    }
     const legacyFileChanged = ['file_id', 'image_url'].some(key => Object.prototype.hasOwnProperty.call(body, key))
     const files = await validateScoreFiles(supabase, user, { ...merged, pages: body.pages ?? (legacyFileChanged ? undefined : getScorePages(existing.data)) })
-    if (merged.published && (!merged.genre_id || !files.pages.length)) throw new ApiError('发布前请设置曲风并上传琴谱文件')
+    if (merged.published && !files.pages.length) throw new ApiError('发布前请上传琴谱文件')
     const values = { ...withoutUserId(body), ...files, ...(user.role === 'student' ? { published: false, target_classes: [] } : {}) }
-    const { data, error } = await supabase.from('scores').update(values).eq('id', id).eq('owner_id', user.id).select('*,genre:score_genres(id,name,teacher_id)').single()
+    const { data, error } = await supabase.from('scores').update(values).eq('id', id).eq('owner_id', user.id).select('*').single()
     dbCheck(error)
     const retainedFiles = new Set(scoreFileIds(data))
     for (const fileId of scoreFileIds(existing.data)) if (!retainedFiles.has(fileId)) await removeUnusedTeachingFile(supabase, fileId)

@@ -50,6 +50,20 @@
       "when": 1792373003006,
       "tag": "0006_classes",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792723341299,
+      "tag": "0007_score_classification",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792725987317,
+      "tag": "0008_map_musicians",
+      "breakpoints": true
     }
   ]
 }

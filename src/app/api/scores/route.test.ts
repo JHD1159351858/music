@@ -61,6 +61,46 @@ async function pageFile(userId: string, type = 'image/png'): Promise<ScorePage> 
 }
 const scoreBody = (pages: ScorePage[]) => ({ user_id: student, title: '多页曲谱', composer: '自选', category: 'domestic', difficulty: 'beginner', pages })
 
+test('teacher classification saves and publishes without legacy difficulty or genre and filters by type and period', async () => {
+  createLocalDatabaseClient()
+  const page = await pageFile(teacher)
+  const body = { id: 'b0000000-0000-4000-8000-000000000001', user_id: teacher, title: '新分类琴谱', composer: '作曲家', category: 'foreign', score_type: '协奏曲', period: '18世纪', published: true, target_classes: ['钢琴一班'], pages: [page] }
+  const response = await createScore(await request('/api/scores', teacher, body))
+  assert.equal(response.status, 201, await response.clone().text())
+  const created = await response.json() as Record<string, unknown>
+  assert.equal(created.score_type, '协奏曲')
+  assert.equal(created.period, '18世纪')
+  assert.equal(created.published, true)
+  assert.deepEqual(created.target_classes, ['钢琴一班'])
+  assert.equal((await createScore(await request('/api/scores', teacher, body))).status, 200)
+  for (const changed of [{ score_type: '夜曲' }, { period: '浪漫主义时期' }]) {
+    assert.equal((await createScore(await request('/api/scores', teacher, { ...body, ...changed }))).status, 409)
+  }
+  for (const query of ['score_type=夜曲', 'period=19世纪']) {
+    assert.deepEqual(await (await listScores(await request(`/api/scores?${query}`, teacher))).json(), [])
+  }
+  const matches = await (await listScores(await request('/api/scores?score_type=协奏曲&period=18世纪', teacher))).json() as Array<{ id: string }>
+  assert.deepEqual(matches.map(score => score.id), [body.id])
+  const db = createLocalDatabaseClient()
+  await db.from('scores').update({ difficulty: 'advanced' }).eq('id', body.id)
+  const patched = await editScore(await request(`/api/scores/${body.id}`, teacher, { user_id: teacher, title: '修改曲名', difficulty: 'beginner', genre_id: 'unused' }), context(body.id))
+  assert.equal(patched.status, 200, await patched.clone().text())
+  const updated = await patched.json() as Record<string, unknown>
+  assert.equal(updated.score_type, '协奏曲')
+  assert.equal(updated.period, '18世纪')
+  assert.equal(updated.difficulty, 'advanced')
+  assert.deepEqual(updated.target_classes, ['钢琴一班'])
+})
+
+test('score classification rejects unknown types and periods over the length limit', async () => {
+  createLocalDatabaseClient()
+  const page = await pageFile(teacher)
+  const body = { user_id: teacher, title: '分类校验', composer: '作曲家', category: 'foreign', difficulty: 'beginner', pages: [page] }
+  for (const fields of [{ score_type: '未定义类型' }, { period: '时'.repeat(101) }]) {
+    assert.equal((await createScore(await request('/api/scores', teacher, { ...body, ...fields }))).status, 400)
+  }
+})
+
 test('student personal uploads stay private, are queued, editable and deletable only by owner', async () => {
   const score = await privateScore()
   assert.equal(score.source, 'student')

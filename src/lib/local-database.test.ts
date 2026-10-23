@@ -67,6 +67,40 @@ test('existing single-file scores survive the additive page column migration', a
   assert.deepEqual(migrated.data, { id: 'legacy-score', file_id: 'old-file', pages: [] })
 })
 
+test('legacy scores gain unset classification fields without changing old values or related rows', async () => {
+  const client = createLocalDatabaseClient()
+  await client.from('score_genres').insert({ id: 'legacy-genre', name: '旧曲风', teacher_id: teacher })
+  await client.from('scores').insert({ id: 'legacy-classification', title: '旧琴谱', composer: '作曲家', difficulty: 'advanced', genre_id: 'legacy-genre', category: 'domestic', source: 'teacher', owner_id: teacher, published: true, target_classes: ['钢琴一班'], file_id: 'old-file', pages: [{ file_id: 'old-file' }] })
+  await client.from('practice_list').insert({ user_id: student, score_id: 'legacy-classification' })
+  const legacy = new DatabaseSync(localDatabasePath())
+  const columns = legacy.prepare('PRAGMA table_info(scores)').all()
+  for (const name of ['score_type', 'period']) if (columns.some(column => column.name === name)) legacy.exec(`ALTER TABLE scores DROP COLUMN ${name}`)
+  legacy.close()
+  for (let opening = 0; opening < 2; opening++) {
+    const reopened = createLocalDatabaseClient()
+    const migrated = await reopened.from('scores').select('id,difficulty,genre_id,category,published,target_classes,file_id,pages,score_type,period').eq('id', 'legacy-classification').single()
+    assert.equal(migrated.error, null)
+    assert.deepEqual(migrated.data, { id: 'legacy-classification', difficulty: 'advanced', genre_id: 'legacy-genre', category: 'domestic', published: true, target_classes: ['钢琴一班'], file_id: 'old-file', pages: [{ file_id: 'old-file' }], score_type: null, period: null })
+    assert.equal((await reopened.from('practice_list').select('id', { count: 'exact', head: true })).count, 1)
+  }
+})
+
+test('an existing database gains custom map musicians without replacing teaching data', async () => {
+  const client = createLocalDatabaseClient()
+  await client.from('profiles').update({ class_name: '原有班级' }).eq('id', student)
+  const legacy = new DatabaseSync(localDatabasePath())
+  legacy.exec('DROP TABLE IF EXISTS map_musicians')
+  legacy.close()
+  const reopened = createLocalDatabaseClient()
+  const saved = await reopened.from('map_musicians').insert({ id: 'custom-musician', name: '测试人物', years: '', era: 'modern', region: '上海', x: 62.5, y: 50, map_kind: 'china', intro: '教师补充的资料', works: '', note: '', sources: [], teacher_id: teacher, avatar_file_id: null }).select().single()
+  assert.equal(saved.error, null)
+  assert.ok(saved.data && !Array.isArray(saved.data))
+  assert.deepEqual(saved.data.sources, [])
+  const persisted = await createLocalDatabaseClient().from('map_musicians').select('id,x,sources').single()
+  assert.deepEqual(persisted.data, { id: 'custom-musician', x: 62.5, sources: [] })
+  assert.deepEqual((await createLocalDatabaseClient().from('profiles').select('class_name').eq('id', student).single()).data, { class_name: '原有班级' })
+})
+
 test('enforces unique values and preserves identity on conflicting upsert', async () => {
   const client = createLocalDatabaseClient()
   const genre = { id: 'genre-1', name: '教师确认曲风', teacher_id: teacher }

@@ -1,0 +1,66 @@
+{
+  "fixture": "Next production start on port 5007; temporary SQLite/uploads; signed synthetic student/teacher sessions",
+  "boundaries": {
+    "realChaoxingSSO": false,
+    "currentDataModified": false,
+    "unknownQuestionSSE": "real local /api/chat fallback, no external model",
+    "mapComposerChat": "intercepted only for layout checks; external model not tested",
+    "imslp": "real link/popup interaction with destination navigation intercepted; live site not tested",
+    "thirdPartyIframeSDK": "inert local responses for third-party scripts"
+  },
+  "checks": [
+    "real upload/API publishes type and period without difficulty or genre_id; filters and unrelated PATCH retain classification",
+    "student library displays type/period, removes the independent knowledge navigation and opens IMSLP in a new window",
+    "floating assistant searches materials and renders real fallback SSE; close/reopen, tab switches and client navigation preserve conversation",
+    "teacher sees type/period without difficulty/style and publishes a real uploaded score through the form; student API receives it",
+    "enlarged map and embedded person card align at desktop/1024px; person selection keeps scroll position; era/region and inline chat switching work",
+    "legacy student /knowledge redirects to /?assistant=1 with the course assistant open",
+    "390px mobile course assistant and map have no horizontal document overflow",
+    "no browser page errors during all checked workflows"
+  ],
+  "screenshots": [
+    "student-practice-desktop.png",
+    "student-assistant-persistent.png",
+    "teacher-score-editor.png",
+    "teacher-scores-desktop.png",
+    "student-map-desktop.png",
+    "student-map-tablet.png",
+    "student-legacy-knowledge.png",
+    "student-assistant-mobile.png",
+    "student-map-mobile.png"
+  ],
+  "mapMeasurements": [
+    {
+      "viewport": 1440,
+      "map": {
+        "x": 197,
+        "y": 208.703125,
+        "width": 870,
+        "height": 704
+      },
+      "person": {
+        "x": 1067,
+        "y": 208.703125,
+        "width": 352,
+        "height": 704
+      },
+      "scrollBefore": 0,
+      "scrollAfter": 0
+    },
+    {
+      "viewport": 1024,
+      "map": {
+        "x": 197,
+        "y": 208.703125,
+        "width": 486,
+        "height": 524
+      },
+      "person": {
+        "x": 683,
+        "y": 208.703125,
+        "width": 320,
+        "height": 524
+      }
+    }
+  ]
+}

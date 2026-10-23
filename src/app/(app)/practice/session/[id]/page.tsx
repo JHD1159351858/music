@@ -231,7 +231,7 @@ function PracticeSession() {
     <div className="fixed inset-0 z-50 flex h-dvh flex-col overflow-hidden bg-background text-foreground">
       <header className={`${scoreFocused ? 'hidden' : 'flex'} shrink-0 flex-wrap items-center gap-3 border-b border-border bg-card px-4 py-3 md:px-6`}>
         <Button variant="ghost" size="icon" disabled={saving} onClick={() => setLeaveOpen(true)} aria-label="返回琴谱库"><ArrowLeft className="h-5 w-5" /></Button>
-        <div className="min-w-0 flex-1"><h1 className="truncate font-serif text-lg font-semibold">{score?.title ?? '正在准备琴谱…'}</h1><p className="truncate text-xs text-muted-foreground">{score?.composer}{taskId ? ' · 任务练习' : ' · 沉浸练习'}</p></div>
+        <div className="min-w-0 flex-1"><h1 className="truncate font-serif text-lg font-semibold">{score?.title ?? '正在准备琴谱…'}</h1><p className="truncate text-xs text-muted-foreground">{score?.composer}{score && ` · ${score.score_type ?? '类型未设置'} · ${score.period ?? '时期未设置'}`}{taskId ? ' · 任务练习' : ' · 沉浸练习'}</p></div>
         <ScorePageNavigation index={pageIndex} count={pages.length} onChange={changePage} />
         {zoomControls}
         <Button variant="outline" size="sm" onClick={toggleScoreFocus} className="gap-2"><Maximize className="h-4 w-4" />全屏看谱</Button>

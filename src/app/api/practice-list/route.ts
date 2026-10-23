@@ -8,7 +8,7 @@ import { refreshScoreFiles } from '@/lib/teaching-files'
 export async function GET(request: Request) {
   return apiRoute(async () => {
     const { user, supabase } = await actor(request)
-    const { data, error } = await supabase.from('practice_list').select('score:scores(*,genre:score_genres(id,name,teacher_id))').eq('user_id', user.id).order('created_at', { ascending: false })
+    const { data, error } = await supabase.from('practice_list').select('score:scores(*)').eq('user_id', user.id).order('created_at', { ascending: false })
     dbCheck(error)
     const scores = (data ?? []).map(row => row.score as unknown as TeachingScore | null).filter((score): score is TeachingScore => !!score && canReadScore(user, score))
     return NextResponse.json(await refreshScoreFiles(scores))

@@ -7,6 +7,7 @@ import { useUser, type DemoUser } from '@/lib/user-context'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ChatPanel } from '@/components/chat-panel'
+import { openCourseAssistant } from '@/components/course-assistant'
 import { LoginDialog } from '@/components/auth/login-dialog'
 import { UserProfile } from '@/components/auth/user-profile'
 import { JourneyAtmosphere } from '@/components/home/journey-atmosphere'
@@ -26,7 +27,7 @@ const MODULE_ARTWORK = '/home/music-journey-clean.webp'
 const ENTRIES: PortalEntry[] = [
   { label: '音乐史地图区', detail: '走进作曲家的音乐世界', href: '/map', icon: Map, box: [44.1, 16.2, 18.2, 10.5], artwork: [44.3, 16.3, 5.7, 10.5] },
   { label: '练琴社区', detail: '师生互动 · 互助答疑', href: '/community', icon: MessagesSquare, box: [68.8, 22.4, 18.5, 10.5], artwork: [68.8, 22.4, 5.7, 10.5] },
-  { label: '曲库知识图谱', detail: '课程专属曲库', href: '/practice', icon: BookOpen, box: [9.1, 45.9, 11.1, 24.3], artwork: [9.7, 46.1, 9.5, 16.9] },
+  { label: '曲谱库', detail: '课程专属曲库', href: '/practice', icon: BookOpen, box: [9.1, 45.9, 11.1, 24.3], artwork: [9.7, 46.1, 9.5, 16.9] },
   { label: '练习任务引擎', detail: '教师任务 · 在线练习', href: '/tasks', icon: Timer, box: [25.1, 59.5, 11.8, 24.3], artwork: [26.4, 59.8, 9.5, 16.9] },
   { label: '练习档案', detail: '录音回溯 · 数据归集', href: '/practice?tab=history', icon: FolderArchive, box: [63.7, 59.5, 11.8, 24.3], artwork: [64.5, 59.9, 9.5, 16.9] },
   { label: '测评评阅', detail: '任务提交 · 教师反馈', href: '/tasks', icon: ClipboardCheck, box: [80.8, 45.9, 11.2, 24.3], artwork: [81.1, 46.1, 9.5, 16.9] },
@@ -113,7 +114,8 @@ export default function LandingPage() {
     else if (role === 'student' || role === 'teacher') chooseIdentity(role === 'teacher' ? '/teacher' : '/practice', role)
     else if (query.get('login') === '1') chooseIdentity(next)
     else if (query.get('assistant') === '1') {
-      if (user) setChatOpen(true)
+      if (user?.role === 'student') openCourseAssistant()
+      else if (user) setChatOpen(true)
       else chooseIdentity('/?assistant=1')
     }
   }, [loading, teacherPending, user, chooseIdentity])
@@ -126,7 +128,8 @@ export default function LandingPage() {
 
   function openAssistant() {
     if (loading) return
-    if (user) setChatOpen(true)
+    if (user?.role === 'student') openCourseAssistant()
+    else if (user) setChatOpen(true)
     else chooseIdentity('/?assistant=1')
   }
 

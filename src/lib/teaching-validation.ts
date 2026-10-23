@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { SubmissionRequirements } from './teaching-types'
+import { SCORE_PERIOD_MAX_LENGTH, SCORE_TYPES } from './score-classification'
 
 const id = z.string().trim().min(1).max(100)
 const text = z.string().trim().min(1).max(200)
@@ -15,9 +16,9 @@ const scorePageSchema = z.object({ image_url: nullableUrl, file_id: nullableText
 export const scoreSchema = userIdSchema.extend({
   id: z.uuid().optional(),
   title: text, composer: text,
-  difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
   category: z.enum(['domestic', 'foreign']),
-  genre_id: id.nullable().optional(),
+  score_type: z.enum(SCORE_TYPES).nullable().optional(),
+  period: z.string().trim().min(1).max(SCORE_PERIOD_MAX_LENGTH).nullable().optional(),
   tips: nullableText, image_url: nullableUrl,
   file_id: nullableText, file_name: nullableText, file_type: nullableText,
   pages: z.array(scorePageSchema).max(50, '每份琴谱最多上传 50 页').optional(),

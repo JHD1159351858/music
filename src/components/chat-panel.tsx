@@ -27,7 +27,7 @@ export function ChatPanel({ context, autoPrompt, placeholder, className }: ChatP
   const [streaming, setStreaming] = useState(false)
   const [sources, setSources] = useState<{ title: string; url: string | null }[]>([])
   const [streamError, setStreamError] = useState('')
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const messagesRef = useRef<HTMLDivElement>(null)
   const autoFired = useRef(false)
   // 用 ref 追踪 context 引用，避免对象字面量导致的重复触发
   const contextRef = useRef(context)
@@ -112,7 +112,8 @@ export function ChatPanel({ context, autoPrompt, placeholder, className }: ChatP
   }, [autoPrompt])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const container = messagesRef.current
+    if (container) container.scrollTop = container.scrollHeight
   }, [messages])
 
   return (
@@ -121,7 +122,7 @@ export function ChatPanel({ context, autoPrompt, placeholder, className }: ChatP
         <Sparkles className="h-4 w-4 text-primary" />
         知音 · 智能讲解
       </div>
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+      <div ref={messagesRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
         {messages.length === 0 && !streaming && (
           <p className="py-8 text-center text-sm text-muted-foreground">
             输入问题，开始与知音对话
@@ -143,7 +144,6 @@ export function ChatPanel({ context, autoPrompt, placeholder, className }: ChatP
             </div>
           </div>
         ))}
-        <div ref={bottomRef} />
       </div>
       {sources.length > 0 && <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground"><span>本轮参考：</span>{sources.map((source, index) => <span key={`${source.title}-${index}`} className="mr-2">{source.url ? <a className="text-primary underline-offset-4 hover:underline" href={source.url} target="_blank" rel="noopener noreferrer">{source.title}</a> : source.title}</span>)}</div>}
       {streamError && <p role="alert" className="px-4 py-2 text-xs text-destructive">{streamError}</p>}

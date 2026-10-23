@@ -1,0 +1,279 @@
+{
+  "fixture": "Next production start on port 5008; temporary SQLite; signed synthetic student session",
+  "boundaries": {
+    "realChaoxingSSO": false,
+    "liveLLM": false,
+    "currentDataModified": false,
+    "thirdPartyIframeSDK": "inert local script responses"
+  },
+  "checks": [
+    "desktop China initially shows the complete original 2:1 image within the canvas",
+    "zoom buttons change 100% to 125% and back, keeping map and person markers synchronized",
+    "mouse wheel zooms the map and the complete-map action restores the full image",
+    "drag moves map and markers together without selecting a person; a subsequent click still opens the embedded person card",
+    "era switching preserves the current view; switching regions resets each newly opened map to its complete image",
+    "390px touch viewport fits both complete maps without horizontal overflow and supports a real two-finger pinch/reset",
+    "no browser page errors or chat/model requests occur during map interactions"
+  ],
+  "screenshots": [
+    "china-complete-desktop.png",
+    "china-zoomed-dragged-desktop.png",
+    "europe-complete-desktop.png",
+    "china-complete-mobile.png",
+    "europe-complete-mobile.png"
+  ],
+  "measurements": [
+    {
+      "viewport": 1440,
+      "kind": "中国",
+      "scale": 100,
+      "image": {
+        "x": 213,
+        "y": 377.203125,
+        "width": 838,
+        "height": 419
+      },
+      "canvas": {
+        "x": 197,
+        "y": 261.703125,
+        "width": 870,
+        "height": 650
+      }
+    },
+    {
+      "viewport": 1440,
+      "kind": "中国",
+      "scale": 100,
+      "image": {
+        "x": 213,
+        "y": 377.203125,
+        "width": 838,
+        "height": 419
+      },
+      "canvas": {
+        "x": 197,
+        "y": 261.703125,
+        "width": 870,
+        "height": 650
+      }
+    },
+    {
+      "action": "drag",
+      "scale": 244,
+      "before": {
+        "image": {
+          "x": -390.94921875,
+          "y": 75.228515625,
+          "width": 2045.8984375,
+          "height": 1022.94921875
+        },
+        "marker": {
+          "x": 737.5145263671875,
+          "y": 537.722412109375,
+          "width": 136.71875,
+          "height": 200.1953125
+        },
+        "normalizedX": 0.5849865751789977,
+        "normalizedY": 0.5499701670644391
+      },
+      "after": {
+        "image": {
+          "x": -460.94921875,
+          "y": 45.228515625,
+          "width": 2045.8984375,
+          "height": 1022.94921875
+        },
+        "marker": {
+          "x": 667.5145263671875,
+          "y": 507.722412109375,
+          "width": 136.71875,
+          "height": 200.1953125
+        },
+        "normalizedX": 0.5849865751789977,
+        "normalizedY": 0.5499701670644391
+      },
+      "events": [
+        {
+          "type": "pointermove",
+          "target": "IMG",
+          "draggable": true,
+          "x": 805.8739013671875,
+          "y": 637.820068359375
+        },
+        {
+          "type": "pointerdown",
+          "target": "IMG",
+          "draggable": true,
+          "x": 805.8739013671875,
+          "y": 637.820068359375
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 797.1239013671875,
+          "y": 634.070068359375
+        },
+        {
+          "type": "dragstart",
+          "target": "IMG",
+          "draggable": true,
+          "x": 805,
+          "y": 637
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 788.3739013671875,
+          "y": 630.320068359375
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 779.6239013671875,
+          "y": 626.570068359375
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 770.8739013671875,
+          "y": 622.820068359375
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 762.1239013671875,
+          "y": 619.070068359375
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 753.3739013671875,
+          "y": 615.320068359375
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 744.6239013671875,
+          "y": 611.570068359375
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 735.8739013671875,
+          "y": 607.820068359375
+        },
+        {
+          "type": "pointerup",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 735.8739013671875,
+          "y": 607.820068359375
+        },
+        {
+          "type": "lostpointercapture",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 735.8739013671875,
+          "y": 607.820068359375
+        }
+      ]
+    },
+    {
+      "viewport": 1440,
+      "kind": "欧洲",
+      "scale": 100,
+      "image": {
+        "x": 213,
+        "y": 377.203125,
+        "width": 838,
+        "height": 419
+      },
+      "canvas": {
+        "x": 197,
+        "y": 261.703125,
+        "width": 870,
+        "height": 650
+      }
+    },
+    {
+      "viewport": 1440,
+      "kind": "中国",
+      "scale": 100,
+      "image": {
+        "x": 213,
+        "y": 377.203125,
+        "width": 838,
+        "height": 419
+      },
+      "canvas": {
+        "x": 197,
+        "y": 261.703125,
+        "width": 870,
+        "height": 650
+      }
+    },
+    {
+      "viewport": 390,
+      "kind": "中国",
+      "scale": 100,
+      "image": {
+        "x": 33,
+        "y": 438.703125,
+        "width": 324,
+        "height": 162
+      },
+      "canvas": {
+        "x": 17,
+        "y": 339.703125,
+        "width": 356,
+        "height": 360
+      }
+    },
+    {
+      "action": "mobile-two-finger-pinch",
+      "scale": 180
+    },
+    {
+      "viewport": 390,
+      "kind": "中国",
+      "scale": 100,
+      "image": {
+        "x": 33,
+        "y": 438.703125,
+        "width": 324,
+        "height": 162
+      },
+      "canvas": {
+        "x": 17,
+        "y": 339.703125,
+        "width": 356,
+        "height": 360
+      }
+    },
+    {
+      "viewport": 390,
+      "kind": "欧洲",
+      "scale": 100,
+      "image": {
+        "x": 33,
+        "y": 438.703125,
+        "width": 324,
+        "height": 162
+      },
+      "canvas": {
+        "x": 17,
+        "y": 339.703125,
+        "width": 356,
+        "height": 360
+      }
+    }
+  ]
+}

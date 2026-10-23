@@ -11,9 +11,9 @@ type UpsertOptions = { onConflict?: string; ignoreDuplicates?: boolean }
 type Filter = { sql: string; values: SQLInputValue[] }
 type Relation = { table: string; local: string; foreign: string; many?: boolean }
 
-const tables = new Set(['profiles', 'classes', 'auth_identities', 'scores', 'practice_records', 'posts', 'comments', 'post_likes', 'score_genres', 'practice_list', 'semester_goals', 'tasks', 'task_score_assignments', 'submissions', 'lesson_marks', 'course_knowledge'])
+const tables = new Set(['profiles', 'classes', 'auth_identities', 'scores', 'practice_records', 'posts', 'comments', 'post_likes', 'score_genres', 'practice_list', 'semester_goals', 'tasks', 'task_score_assignments', 'submissions', 'lesson_marks', 'course_knowledge', 'map_musicians'])
 const booleanColumns = new Set(['published', 'ask_teacher', 'marked_for_lesson', 'closed'])
-const jsonColumns = new Set(['target_classes', 'target_student_ids', 'requirements', 'keywords', 'pages', 'details'])
+const jsonColumns = new Set(['target_classes', 'target_student_ids', 'requirements', 'keywords', 'pages', 'details', 'sources'])
 const relations: Record<string, Record<string, Relation>> = {
   scores: { score_genres: { table: 'score_genres', local: 'genre_id', foreign: 'id' } },
   practice_list: { scores: { table: 'scores', local: 'score_id', foreign: 'id' } },
@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS score_genres (
 CREATE TABLE IF NOT EXISTS scores (
   id TEXT PRIMARY KEY, title TEXT NOT NULL, composer TEXT NOT NULL,
   difficulty TEXT NOT NULL CHECK(difficulty IN ('beginner','intermediate','advanced')),
+  score_type TEXT, period TEXT,
   category TEXT NOT NULL DEFAULT 'foreign' CHECK(category IN ('domestic','foreign')),
   genre_id TEXT REFERENCES score_genres(id) ON DELETE RESTRICT,
   published INTEGER NOT NULL DEFAULT 0 CHECK(published IN (0,1)), tips TEXT, image_url TEXT,
@@ -90,6 +91,15 @@ CREATE TABLE IF NOT EXISTS course_knowledge (
   keywords TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(keywords)), source_url TEXT,
   teacher_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE, ${createdAt}
 );
+CREATE TABLE IF NOT EXISTS map_musicians (
+  id TEXT PRIMARY KEY, name TEXT NOT NULL CHECK(length(name) BETWEEN 1 AND 160),
+  years TEXT NOT NULL DEFAULT '', era TEXT NOT NULL, region TEXT NOT NULL, intro TEXT NOT NULL,
+  works TEXT NOT NULL DEFAULT '', note TEXT NOT NULL DEFAULT '',
+  x REAL NOT NULL CHECK(x BETWEEN 0 AND 100), y REAL NOT NULL CHECK(y BETWEEN 0 AND 100),
+  map_kind TEXT NOT NULL CHECK(map_kind IN ('china','europe')),
+  sources TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(sources)), avatar_file_id TEXT,
+  teacher_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE, ${createdAt}
+);
 CREATE TABLE IF NOT EXISTS practice_list (
   id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   score_id TEXT NOT NULL REFERENCES scores(id) ON DELETE CASCADE, ${createdAt}, UNIQUE(user_id,score_id)
@@ -126,6 +136,7 @@ CREATE INDEX IF NOT EXISTS posts_created_idx ON posts(created_at);
 CREATE INDEX IF NOT EXISTS comments_post_idx ON comments(post_id);
 CREATE INDEX IF NOT EXISTS tasks_teacher_idx ON tasks(teacher_id);
 CREATE INDEX IF NOT EXISTS classes_teacher_idx ON classes(teacher_id);
+CREATE INDEX IF NOT EXISTS map_musicians_teacher_idx ON map_musicians(teacher_id);
 `
 
 export function localDatabasePath(): string {
@@ -140,6 +151,8 @@ function openDatabase(file: string): DatabaseSync {
     db.exec('BEGIN IMMEDIATE')
     db.exec(schema)
     const scoreColumns = db.prepare('PRAGMA table_info(scores)').all()
+    if (!scoreColumns.some(column => column.name === 'score_type')) db.exec('ALTER TABLE scores ADD COLUMN score_type TEXT')
+    if (!scoreColumns.some(column => column.name === 'period')) db.exec('ALTER TABLE scores ADD COLUMN period TEXT')
     if (!scoreColumns.some(column => column.name === 'target_classes')) db.exec("ALTER TABLE scores ADD COLUMN target_classes TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(target_classes))")
     if (!scoreColumns.some(column => column.name === 'pages')) db.exec("ALTER TABLE scores ADD COLUMN pages TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(pages))")
     const postColumns = db.prepare('PRAGMA table_info(posts)').all()

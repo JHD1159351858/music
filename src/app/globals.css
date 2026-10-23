@@ -487,7 +487,22 @@
   .journey-river, .journey-orbit { display: none; }
   .journey-atmosphere { opacity: 0.55; }
 }
+.course-assistant-trigger { animation: course-assistant-breathe 3.2s ease-in-out infinite; }
+.course-assistant-robot { animation: course-assistant-float 2.8s ease-in-out infinite; }
+[data-motion='paused'] > .course-assistant-trigger,
+[data-motion='paused'] .course-assistant-robot { animation-play-state: paused; }
+.course-assistant-trigger:hover .course-assistant-robot,
+.course-assistant-trigger:focus-visible .course-assistant-robot { animation-play-state: paused; }
+@keyframes course-assistant-float {
+  0%, 100% { transform: translateY(3px) rotate(-3deg); }
+  50% { transform: translateY(-5px) rotate(3deg); }
+}
+@keyframes course-assistant-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 0%, transparent), 0 8px 24px color-mix(in oklch, var(--background) 35%, transparent); }
+  50% { box-shadow: 0 0 0 7px color-mix(in oklch, var(--primary) 10%, transparent), 0 8px 28px color-mix(in oklch, var(--primary) 20%, transparent); }
+}
 @media (prefers-reduced-motion: reduce) {
+  .course-assistant-trigger, .course-assistant-robot { animation: none; }
   .journey-stage { --scene-x: 0px !important; --scene-y: 0px !important; }
   .journey-stage *, .journey-stage *::before, .journey-stage *::after,
   .journey-entry > button, .journey-entry > button::after { animation: none !important; transition: none !important; }

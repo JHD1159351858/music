@@ -32,3 +32,21 @@ test('score upload receipt rejects tampering and expiry', async () => {
     else process.env.ZHIYIN_SESSION_SECRET = before
   }
 })
+
+test('avatar purpose is signed and required only when the verifier requests it', () => {
+  const before = process.env.ZHIYIN_SESSION_SECRET
+  process.env.ZHIYIN_SESSION_SECRET = secret
+  try {
+    const file = { fileId: 'remote-avatar', ownerId: 'teacher-1', fileType: 'image/png' }
+    const target = { fileId: file.fileId, ownerId: file.ownerId }
+    const general = createScoreUploadReceipt(file, issuedAt)
+    assert.equal(verifyScoreUploadReceipt(general, target, issuedAt + 1), 'image/png')
+    assert.equal(verifyScoreUploadReceipt(general, { ...target, purpose: 'map-avatar' }, issuedAt + 1), null)
+    const avatar = createScoreUploadReceipt({ ...file, purpose: 'map-avatar' }, issuedAt)
+    assert.equal(verifyScoreUploadReceipt(avatar, { ...target, purpose: 'map-avatar' }, issuedAt + 1), 'image/png')
+    assert.equal(verifyScoreUploadReceipt(avatar, target, issuedAt + 1), 'image/png')
+  } finally {
+    if (before === undefined) delete process.env.ZHIYIN_SESSION_SECRET
+    else process.env.ZHIYIN_SESSION_SECRET = before
+  }
+})

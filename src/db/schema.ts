@@ -5,6 +5,7 @@ import {
   varchar,
   text,
   integer,
+  doublePrecision,
   boolean,
   timestamp,
   date,
@@ -16,6 +17,7 @@ import {
 import { serviceRole } from 'drizzle-orm/supabase'
 import type { ScorePage } from '@/lib/teaching-types'
 import type { AuthProfile } from '@/lib/auth-profile-types'
+import type { HistorySource } from '@/lib/composers'
 
 // 远端业务表仅允许后端 service_role 访问，应用 API 校验超星签名会话与数据归属。
 
@@ -53,6 +55,8 @@ export const scores = pgTable(
     title: text('title').notNull(),
     composer: text('composer').notNull(),
     difficulty: text('difficulty').notNull(), // beginner | intermediate | advanced
+    score_type: text('score_type'),
+    period: text('period'),
     category: text('category').default('foreign').notNull(), // domestic | foreign
     genre_id: varchar('genre_id', { length: 36 }).references(() => scoreGenres.id, { onDelete: 'set null' }),
     published: boolean('published').default(false).notNull(),
@@ -199,6 +203,23 @@ export const courseKnowledge = pgTable('course_knowledge', {
   teacher_id: varchar('teacher_id', { length: 36 }).notNull().references(() => profiles.id, { onDelete: 'cascade' }),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, () => teachingPolicies('course_knowledge'))
+export const mapMusicians = pgTable('map_musicians', {
+  id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: text('name').notNull(), years: text('years').default('').notNull(),
+  era: text('era').notNull(), region: text('region').notNull(), intro: text('intro').notNull(),
+  works: text('works').default('').notNull(), note: text('note').default('').notNull(),
+  x: doublePrecision('x').notNull(), y: doublePrecision('y').notNull(), map_kind: text('map_kind').notNull(),
+  sources: jsonb('sources').$type<HistorySource[]>().default([]).notNull(), avatar_file_id: text('avatar_file_id'),
+  teacher_id: varchar('teacher_id', { length: 36 }).notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index('map_musicians_teacher_idx').on(table.teacher_id),
+  check('map_musicians_name_check', sql`char_length(${table.name}) BETWEEN 1 AND 160`),
+  check('map_musicians_kind_check', sql`${table.map_kind} IN ('china', 'europe')`),
+  check('map_musicians_x_check', sql`${table.x} BETWEEN 0 AND 100`),
+  check('map_musicians_y_check', sql`${table.y} BETWEEN 0 AND 100`),
+  ...teachingPolicies('map_musicians'),
+]).enableRLS()
 export const scoreGenres = pgTable('score_genres', {
   id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   name: text('name').notNull(),

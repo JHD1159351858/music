@@ -162,13 +162,16 @@ export async function validateFileReference(supabase: TeachingClient, user: Teac
 export async function canAccessTeachingFile(supabase: TeachingClient, user: TeachingProfile, fileId: string): Promise<boolean> {
   let records = supabase.from('practice_records').select('id').eq('audio_file_id', fileId)
   if (user.role !== 'teacher') records = records.eq('user_id', user.id)
-  const [scores, pageScores, practice] = await Promise.all([
+  const [scores, pageScores, practice, musicians] = await Promise.all([
     supabase.from('scores').select('*').eq('file_id', fileId),
     supabase.from('scores').select('*').contains('pages', [{ file_id: fileId }]), records.limit(1),
+    supabase.from('map_musicians').select('id').eq('avatar_file_id', fileId).limit(1),
   ])
   dbCheck(scores.error)
   dbCheck(pageScores.error)
   dbCheck(practice.error)
+  dbCheck(musicians.error)
+  if (musicians.data?.length) return true
   if ([...(scores.data ?? []), ...(pageScores.data ?? [])].some(score => canReadScore(user, score)) || practice.data?.length) return true
 
   let submitted = supabase.from('submissions').select('audio_file_id,video_file_id,practice_record_id')

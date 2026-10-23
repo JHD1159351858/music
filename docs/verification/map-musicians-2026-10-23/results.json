@@ -1,0 +1,112 @@
+{
+  "fixture": "Next production start on port 5009; temporary SQLite/uploads; signed synthetic teacher, second teacher and student sessions",
+  "boundaries": {
+    "realChaoxingSSO": false,
+    "currentDataModified": false,
+    "externalLLM": false,
+    "modelIntegration": "actual SDK HTTP requests against a controlled loopback OpenAI-compatible SSE mock",
+    "thirdPartyIframeSDK": "inert local script responses"
+  },
+  "checks": [
+    "student cannot create musicians; builtin musicians remain read-only; second signed teacher is a separate real profile",
+    "canceling either point selection or the populated editor creates no musician",
+    "student writes and another teacher edits/deletes are rejected without changing the saved custom musician",
+    "teacher uploads an avatar and sources, picks transformed full-image coordinates accurately, and saves a visible custom musician; dragging does not add one",
+    "student sees the uploaded avatar, sources and person card after reload; student and another teacher have no ownership controls",
+    "actual backend SDK request sends the saved custom musician and sources in its system message to a controlled local model",
+    "repicking locks map/era switches and preserves unsaved text/avatar; edits persist after reload and the replaced avatar is inaccessible to students",
+    "390px mobile custom markers/person cards keep both complete 2:1 maps, button zoom/reset and no horizontal overflow",
+    "confirmed deletion removes the student marker and avatar access; canceled deletion preserves it; the deleted ID is never sent to the model",
+    "one deliberately missing avatar in the owned temporary fixture falls back to a name initial while builtin and other custom musicians remain readable",
+    "all checked workflows complete without browser page errors"
+  ],
+  "screenshots": [
+    "teacher-created-after-zoom-pan.png",
+    "student-custom-musician.png",
+    "teacher-updated-musician.png",
+    "student-custom-mobile.png",
+    "student-after-delete.png",
+    "student-missing-avatar-fallback.png"
+  ],
+  "coordinates": [
+    {
+      "step": "create form after zoom and pan",
+      "expected": {
+        "x": 41.71742506142507,
+        "y": 36.665356265356266
+      },
+      "saved": {
+        "x": 41.6973,
+        "y": 36.6449
+      }
+    },
+    {
+      "step": "persisted new musician after zoom and pan",
+      "expected": {
+        "x": 41.71742506142507,
+        "y": 36.665356265356266
+      },
+      "saved": {
+        "x": 41.6972972972973,
+        "y": 36.644914004914
+      }
+    },
+    {
+      "step": "student custom marker uses direct whole-image coordinates",
+      "expected": {
+        "x": 41.6972972972973,
+        "y": 36.644914004914
+      },
+      "saved": {
+        "x": 41.697121121718375,
+        "y": 36.6423031026253
+      }
+    },
+    {
+      "step": "edit form after selecting a new point",
+      "expected": {
+        "x": 33.203380835380834,
+        "y": 53.01916461916461
+      },
+      "saved": {
+        "x": 33.1933,
+        "y": 52.9484
+      }
+    },
+    {
+      "step": "persisted edited musician",
+      "expected": {
+        "x": 33.203380835380834,
+        "y": 53.01916461916461
+      },
+      "saved": {
+        "x": 33.19331695331695,
+        "y": 52.94840294840295
+      }
+    }
+  ],
+  "model": {
+    "transport": "real SDK HTTP + loopback SSE",
+    "requestCountBeforeDelete": 1,
+    "systemPromptMatchesSavedRow": true,
+    "sourcesMatchSavedRow": true,
+    "noOwnerOrSignedAvatarInModelContext": true,
+    "requestCountAfterDelete": 1,
+    "deletedIdTriggersGroundedFallback": true,
+    "deletedIdNotSentToModel": true
+  },
+  "assetAccess": [
+    {
+      "stage": "replaced-avatar",
+      "studentRenewalStatus": 404,
+      "studentOldUrlStatus": 404,
+      "originalUploaderStatus": 404
+    },
+    {
+      "stage": "deleted-musician-avatar",
+      "studentRenewalStatus": 404,
+      "studentOldUrlStatus": 404,
+      "originalUploaderStatus": 404
+    }
+  ]
+}

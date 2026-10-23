@@ -38,7 +38,7 @@ export function ScorePreview({ score, onClose }: { score: Score; onClose: () => 
   }
   return <Dialog open onOpenChange={(open) => { if (!open) void close() }}>
     <DialogContent ref={container} className={`flex flex-col overflow-hidden bg-background sm:max-w-6xl ${fullscreen ? 'inset-0 h-dvh !max-h-none !max-w-none translate-x-0 translate-y-0 rounded-none' : 'max-h-[92dvh]'}`}>
-      <DialogHeader className="shrink-0 pr-6"><DialogTitle>{score.title}</DialogTitle><DialogDescription>{score.composer}{score.tips ? ` · ${score.tips}` : ''}</DialogDescription></DialogHeader>
+      <DialogHeader className="shrink-0 pr-6"><DialogTitle>{score.title}</DialogTitle><DialogDescription>{score.composer} · {score.score_type ?? '类型未设置'} · {score.period ?? '时期未设置'}{score.tips ? ` · ${score.tips}` : ''}</DialogDescription></DialogHeader>
       {page?.image_url ? <>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <ScorePageNavigation index={pageIndex} count={pages.length} onChange={changePage} />

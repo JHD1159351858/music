@@ -4,6 +4,7 @@ import Script from 'next/script';
 import { IframeSdkProvider } from '@/components/iframe-sdk-provider';
 import { UserProvider } from '@/lib/user-context';
 import { Toaster } from '@/components/ui/sonner';
+import { CourseAssistant } from '@/components/course-assistant';
 
 import './globals.css';
 
@@ -53,7 +54,7 @@ export default function RootLayout({
           }}
         />
         <IframeSdkProvider>
-          <UserProvider>{children}<Toaster /></UserProvider>
+          <UserProvider>{children}<CourseAssistant /><Toaster /></UserProvider>
         </IframeSdkProvider>
       </body>
     </html>
