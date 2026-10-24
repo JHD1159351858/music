@@ -27,6 +27,13 @@ echo "Build parallelism: workers=${BUILD_CPUS} rayon_threads=${CPU_LIMIT} (conta
 echo "Installing dependencies..."
 pnpm install --prefer-frozen-lockfile --prefer-offline --reporter=append-only
 
+if [[ "${ZHIYIN_INSTALL_MUSIC21:-false}" == "true" ]]; then
+  echo "Installing isolated music21 parser..."
+  python3 -m venv .venv-music21
+  .venv-music21/bin/python -m pip install --disable-pip-version-check -r scripts/music21/requirements.txt
+  .venv-music21/bin/python -c "import music21; print('music21 ready:', music21.__version__)"
+fi
+
 BUILD_START=${SECONDS}
 echo "Building the Next.js project..."
 env ${BUILD_ENV} pnpm next build

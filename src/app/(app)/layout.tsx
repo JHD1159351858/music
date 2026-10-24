@@ -10,6 +10,7 @@ import { UserProfile } from '@/components/auth/user-profile'
 import {
   Music,
   Timer,
+  FileMusic,
   MessagesSquare,
   Map,
   BarChart3,
@@ -22,6 +23,7 @@ import {
 const NAV = [
   { href: '/', label: '知音首页', icon: House, roles: ['student', 'teacher'] },
   { href: '/practice', label: '琴谱与练习', icon: Timer, roles: ['student', 'teacher'] },
+  { href: '/analysis', label: '乐谱分析', icon: FileMusic, roles: ['student', 'teacher'] },
   { href: '/tasks', label: '练习任务与评阅', icon: ClipboardList, roles: ['student', 'teacher'] },
   { href: '/community', label: '练琴社区', icon: MessagesSquare, roles: ['student', 'teacher'] },
   { href: '/map', label: '音乐史地图', icon: Map, roles: ['student', 'teacher'] },

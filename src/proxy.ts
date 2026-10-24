@@ -4,7 +4,6 @@ import { readAuthSession, requestOrigin, validRequestOrigin } from '@/lib/auth-s
 export async function proxy(request: NextRequest) {
   const origin = requestOrigin(request)
   const pathname = request.nextUrl.pathname
-  if (pathname === '/analysis' || pathname.startsWith('/analysis/')) return NextResponse.redirect(new URL('/practice', origin))
   if (pathname.startsWith('/api/auth/')) return NextResponse.next()
   const api = pathname.startsWith('/api/')
   const session = await readAuthSession(request).catch(() => null)

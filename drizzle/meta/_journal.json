@@ -64,6 +64,13 @@
       "when": 1792725987317,
       "tag": "0008_map_musicians",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792858193403,
+      "tag": "0009_analysis_history",
+      "breakpoints": true
     }
   ]
 }

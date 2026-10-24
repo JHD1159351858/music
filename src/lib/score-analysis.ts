@@ -2,6 +2,13 @@ import { XMLParser, XMLValidator } from 'fast-xml-parser'
 import { z } from 'zod'
 
 export interface PitchPoint { index: number; midi: number; note: string }
+export interface Music21Details {
+  version: string; partCount: number; measureCount: number; restCount: number
+  timeSignatures: string[]; tempos: number[]; declaredKeys: string[]
+  estimatedKey: { name: string; correlation: number | null } | null
+  notes: Array<{ index: number; midi: number; note: string; part: string; measure: number | null; beat: number | null; offset: number; duration: number; voice: string | null }>
+  chords: Array<{ measure: number | null; beat: number | null; offset: number; notes: string[]; name: string; romanNumeral: string | null }>
+}
 export interface AnalysisResult {
   title: string | null; composer: string | null; key: string | null; range: string | null
   noteCount: number | null; chordColor: string | null
@@ -10,6 +17,11 @@ export interface AnalysisResult {
   workBackground: string | null; composerBackground: string | null
   creationYear: string | null; period: string | null; melody: string | null
   provenance: 'musicxml' | 'abc' | 'image-model'; warnings: string[]
+  music21?: Music21Details
+  analysisReceipt?: string
+  sources?: Array<{ title: string; url: string | null }>
+  fileName?: string
+  historyId?: string
 }
 const pitchSchema = z.object({ step: z.enum(['C', 'D', 'E', 'F', 'G', 'A', 'B']), octave: z.number().int().min(-1).max(9), alter: z.number().int().min(-2).max(2).default(0) })
 type Pitch = z.infer<typeof pitchSchema>

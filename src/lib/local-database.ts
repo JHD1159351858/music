@@ -11,9 +11,9 @@ type UpsertOptions = { onConflict?: string; ignoreDuplicates?: boolean }
 type Filter = { sql: string; values: SQLInputValue[] }
 type Relation = { table: string; local: string; foreign: string; many?: boolean }
 
-const tables = new Set(['profiles', 'classes', 'auth_identities', 'scores', 'practice_records', 'posts', 'comments', 'post_likes', 'score_genres', 'practice_list', 'semester_goals', 'tasks', 'task_score_assignments', 'submissions', 'lesson_marks', 'course_knowledge', 'map_musicians'])
+const tables = new Set(['profiles', 'classes', 'auth_identities', 'scores', 'practice_records', 'posts', 'comments', 'post_likes', 'score_genres', 'practice_list', 'semester_goals', 'tasks', 'task_score_assignments', 'submissions', 'lesson_marks', 'course_knowledge', 'map_musicians', 'score_analyses'])
 const booleanColumns = new Set(['published', 'ask_teacher', 'marked_for_lesson', 'closed'])
-const jsonColumns = new Set(['target_classes', 'target_student_ids', 'requirements', 'keywords', 'pages', 'details', 'sources'])
+const jsonColumns = new Set(['target_classes', 'target_student_ids', 'requirements', 'keywords', 'pages', 'details', 'sources', 'result'])
 const relations: Record<string, Record<string, Relation>> = {
   scores: { score_genres: { table: 'score_genres', local: 'genre_id', foreign: 'id' } },
   practice_list: { scores: { table: 'scores', local: 'score_id', foreign: 'id' } },
@@ -104,6 +104,13 @@ CREATE TABLE IF NOT EXISTS practice_list (
   id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   score_id TEXT NOT NULL REFERENCES scores(id) ON DELETE CASCADE, ${createdAt}, UNIQUE(user_id,score_id)
 );
+CREATE TABLE IF NOT EXISTS score_analyses (
+  id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  title TEXT, composer TEXT, file_name TEXT,
+  provenance TEXT NOT NULL CHECK(provenance IN ('musicxml','abc','image-model')),
+  engine TEXT NOT NULL CHECK(engine IN ('music21','basic','image-model')),
+  note_count INTEGER CHECK(note_count >= 0), result TEXT NOT NULL CHECK(json_valid(result)), ${createdAt}
+);
 CREATE TABLE IF NOT EXISTS semester_goals (
   id TEXT PRIMARY KEY, name TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL CHECK(end_date >= start_date),
   target_minutes INTEGER NOT NULL CHECK(target_minutes > 0), teacher_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE, ${createdAt}
@@ -137,6 +144,7 @@ CREATE INDEX IF NOT EXISTS comments_post_idx ON comments(post_id);
 CREATE INDEX IF NOT EXISTS tasks_teacher_idx ON tasks(teacher_id);
 CREATE INDEX IF NOT EXISTS classes_teacher_idx ON classes(teacher_id);
 CREATE INDEX IF NOT EXISTS map_musicians_teacher_idx ON map_musicians(teacher_id);
+CREATE INDEX IF NOT EXISTS score_analyses_user_created_idx ON score_analyses(user_id,created_at,id);
 `
 
 export function localDatabasePath(): string {
@@ -307,7 +315,9 @@ class LocalQuery implements PromiseLike<QueryResult> {
         if (this.options.count) count = Number(db.prepare(`SELECT COUNT(*) AS total FROM ${table}${where}`).get(...filterValues)?.total ?? 0)
         const ordering = this.ordering.length ? ` ORDER BY ${this.ordering.join(',')}` : ''
         const paging = this.maximum === undefined ? '' : ` LIMIT ${this.maximum} OFFSET ${this.offset}`
-        rows = this.options.head ? [] : db.prepare(`SELECT * FROM ${table}${where}${ordering}${paging}`).all(...filterValues).map(decode)
+        const fields = projectionParts(this.selection)
+        const columns = fields.every(field => /^[a-z_][a-z0-9_]*$/i.test(field)) ? fields.map(identifier).join(',') : '*'
+        rows = this.options.head ? [] : db.prepare(`SELECT ${columns} FROM ${table}${where}${ordering}${paging}`).all(...filterValues).map(decode)
       } else {
         db.exec('BEGIN IMMEDIATE')
         transaction = true

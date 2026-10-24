@@ -106,3 +106,7 @@ Desktop.ini
 /data/
 
 .runtime/
+
+# Isolated music21 runtime and Python bytecode.
+.venv-music21/
+__pycache__/

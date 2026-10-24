@@ -18,6 +18,7 @@ import { serviceRole } from 'drizzle-orm/supabase'
 import type { ScorePage } from '@/lib/teaching-types'
 import type { AuthProfile } from '@/lib/auth-profile-types'
 import type { HistorySource } from '@/lib/composers'
+import type { AnalysisResult } from '@/lib/score-analysis'
 
 // 远端业务表仅允许后端 service_role 访问，应用 API 校验超星签名会话与数据归属。
 
@@ -220,6 +221,25 @@ export const mapMusicians = pgTable('map_musicians', {
   check('map_musicians_y_check', sql`${table.y} BETWEEN 0 AND 100`),
   ...teachingPolicies('map_musicians'),
 ]).enableRLS()
+export const scoreAnalyses = pgTable('score_analyses', {
+  id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  user_id: varchar('user_id', { length: 36 }).notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  title: text('title'),
+  composer: text('composer'),
+  file_name: text('file_name'),
+  provenance: text('provenance').$type<AnalysisResult['provenance']>().notNull(),
+  engine: text('engine').$type<'music21' | 'basic' | 'image-model'>().notNull(),
+  note_count: integer('note_count'),
+  result: jsonb('result').$type<AnalysisResult>().notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index('score_analyses_user_created_idx').on(table.user_id, table.created_at, table.id),
+  check('score_analyses_provenance_check', sql`${table.provenance} IN ('musicxml', 'abc', 'image-model')`),
+  check('score_analyses_engine_check', sql`${table.engine} IN ('music21', 'basic', 'image-model')`),
+  check('score_analyses_note_count_check', sql`${table.note_count} >= 0`),
+  ...teachingPolicies('score_analyses'),
+]).enableRLS()
+
 export const scoreGenres = pgTable('score_genres', {
   id: varchar('id', { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
