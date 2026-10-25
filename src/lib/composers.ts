@@ -1,5 +1,6 @@
 // 音乐史地图数据：人物与作品信息均依据公开史实整理
-// x/y 为示意图上的百分比坐标（非精确地理坐标，仅示意地域分布）
+// x/y 为完整 public/maps/*.png 底图左上角起算的百分比，不随画布尺寸或缩放换算。
+// 按 region 中的代表性地点近似标定；底图为地域示意，并非精确地理投影。
 
 export interface Composer {
   id: string
@@ -52,7 +53,7 @@ export const CHINA_COMPOSERS: Composer[] = [
     years: '春秋时期',
     era: 'ancient',
     region: '湖北武汉一带（传说核心流布地）',
-    x: 55, y: 58,
+    x: 52.5, y: 48.8,
     avatar: '/avatars/boji.png',
     intro: '春秋时期琴师，「高山流水遇知音」典故的主人公，本应用「知音」之名即源于此。',
     works: '相关琴曲与典故：《高山》《流水》。典故与后世传谱不能直接等同于可考证的个人作曲记录。',
@@ -65,7 +66,7 @@ export const CHINA_COMPOSERS: Composer[] = [
     years: '224 — 263年',
     era: 'ancient',
     region: '谯国铚县（今安徽濉溪）',
-    x: 62, y: 48,
+    x: 53.9, y: 44.9,
     avatar: '/avatars/jikang.png',
     intro: '魏晋时期思想家、音乐家，「竹林七贤」之一，临刑前弹奏《广陵散》，叹「《广陵散》于今绝矣」。',
     works: '善弹《广陵散》，著《琴赋》《声无哀乐论》，是中国音乐美学史上的重要文献。',
@@ -78,7 +79,7 @@ export const CHINA_COMPOSERS: Composer[] = [
     years: '约1155 — 1221年',
     era: 'songyuan',
     region: '鄱阳（今江西鄱阳），长期游历江浙',
-    x: 66, y: 60,
+    x: 54, y: 51.4,
     avatar: '/avatars/jiangkui.png',
     intro: '南宋词人、音乐家，自度曲（自作词曲）传世，是宋代词乐最重要的留存者。',
     works: '《白石道人歌曲》存词曲十七首，附宋俗字谱，含《扬州慢》《杏花天影》等名篇。',
@@ -87,7 +88,7 @@ export const CHINA_COMPOSERS: Composer[] = [
   },
   {
     id: 'zhu-zaiyu', name: '朱载堉', years: '1536 — 1611年', era: 'mingqing',
-    region: '河南沁阳', x: 58, y: 45, avatar: '',
+    region: '河南沁阳', x: 51.2, y: 42.8, avatar: '',
     intro: '明代乐律学家。通过数学计算与乐律实验探索十二平均律，体现了中国传统乐学与科学研究的联系。',
     works: '乐律著述《乐律全书》。此处收录其音乐理论贡献，不将乐律著作当作钢琴演奏曲目。',
     note: '学习提示：从传统乐律的科学探索理解文化传承与创新；把音乐听觉经验与可验证的测量、计算联系起来。',
@@ -99,7 +100,7 @@ export const CHINA_COMPOSERS: Composer[] = [
     years: '1893 — 1950年',
     era: 'modern',
     region: '江苏无锡',
-    x: 68, y: 62,
+    x: 56.5, y: 47.9,
     avatar: '/avatars/huayanjun.png',
     intro: '民间音乐家，道士出身，晚年失明后沿街卖艺，1950年中央音乐学院为其抢录了仅存的几首乐曲。',
     works: '二胡曲《二泉映月》《听松》《寒春风曲》，琵琶曲《大浪淘沙》《昭君出塞》《龙船》。',
@@ -112,7 +113,7 @@ export const CHINA_COMPOSERS: Composer[] = [
     years: '1895 — 1932年',
     era: 'modern',
     region: '江苏江阴，任教于北平',
-    x: 67, y: 55,
+    x: 55.8, y: 34.6, // 取任教地北平作为地图代表点
     avatar: '/avatars/liutianhua.png',
     intro: '近代民族音乐家，将二胡从民间伴奏乐器提升为独奏乐器并引入高等音乐教育。',
     works: '二胡曲《光明行》《空山鸟语》《良宵》等十首，及四十七首练习曲。',
@@ -125,7 +126,7 @@ export const CHINA_COMPOSERS: Composer[] = [
     years: '1905 — 1945年',
     era: 'modern',
     region: '广东番禺（今广州），后赴延安',
-    x: 58, y: 82,
+    x: 52.7, y: 59.6,
     avatar: '/avatars/xianxinghai.png',
     intro: '人民音乐家。巴黎求学归国后投身抗日救亡歌咏运动，1938年赴延安任鲁迅艺术学院音乐系主任。',
     works: '《黄河大合唱》《生产大合唱》，歌曲《在太行山上》《到敌人后方去》等。',
@@ -138,7 +139,7 @@ export const CHINA_COMPOSERS: Composer[] = [
     years: '1912 — 1935年',
     era: 'modern',
     region: '云南昆明，活跃于上海',
-    x: 45, y: 78,
+    x: 42.2, y: 57.2,
     avatar: '/avatars/nieer.png',
     intro: '中华人民共和国国歌作曲者。短暂一生中创作了大量反映民众疾苦与救亡呼声的歌曲。',
     works: '《义勇军进行曲》《卖报歌》《毕业歌》《大路歌》，民族器乐曲《金蛇狂舞》《翠湖春晓》（改编整理）。',
@@ -154,7 +155,7 @@ export const EUROPE_COMPOSERS: Composer[] = [
     years: '1685 — 1750年',
     era: 'baroque',
     region: '德国（艾森纳赫、莱比锡）',
-    x: 50, y: 38,
+    x: 43.5, y: 59, // 莱比锡
     avatar: '/avatars/bach.png',
     intro: '巴洛克音乐集大成者，复调艺术的高峰，被称为「西方音乐之父」。',
     works: '《平均律钢琴曲集》《哥德堡变奏曲》《勃兰登堡协奏曲》《马太受难曲》。',
@@ -167,7 +168,7 @@ export const EUROPE_COMPOSERS: Composer[] = [
     years: '1756 — 1791年',
     era: 'classical',
     region: '奥地利（萨尔茨堡、维也纳）',
-    x: 52, y: 45,
+    x: 44, y: 69, // 萨尔茨堡
     avatar: '/avatars/mozart.png',
     intro: '古典主义天才作曲家，五岁作曲，一生留下六百余部作品，涵盖几乎所有体裁。',
     works: '歌剧《费加罗的婚礼》《魔笛》，第四十、四十一交响曲，大量钢琴奏鸣曲与协奏曲。',
@@ -180,7 +181,7 @@ export const EUROPE_COMPOSERS: Composer[] = [
     years: '1770 — 1827年',
     era: 'classical',
     region: '德国波恩，定居维也纳',
-    x: 49, y: 41,
+    x: 39.2, y: 60.5, // 波恩
     avatar: '/avatars/beethoven.png',
     intro: '在失聪中创作的巨人，把古典主义推向顶峰并为浪漫主义开辟道路。',
     works: '九部交响曲，《月光》《热情》《悲怆》奏鸣曲，歌剧《费德里奥》。',
@@ -193,7 +194,7 @@ export const EUROPE_COMPOSERS: Composer[] = [
     years: '1810 — 1849年',
     era: 'romantic',
     region: '波兰华沙，侨居巴黎',
-    x: 55, y: 38,
+    x: 52.6, y: 54, // 华沙
     avatar: '/avatars/chopin.png',
     intro: '「钢琴诗人」，一生几乎只为钢琴写作，作品中深植对故国波兰的眷恋。',
     works: '《革命练习曲》《降E大调夜曲》、二十四首前奏曲、玛祖卡与波罗乃兹舞曲。',
@@ -206,7 +207,7 @@ export const EUROPE_COMPOSERS: Composer[] = [
     years: '1862 — 1918年',
     era: 'modern20',
     region: '法国巴黎',
-    x: 42, y: 42,
+    x: 34.6, y: 65.5,
     avatar: '/avatars/debussy.png',
     intro: '印象主义音乐开创者，以色彩与光影重构和声语言，深受东方艺术影响。',
     works: '《月光》（贝加摩组曲）、《大海》《牧神午后前奏曲》《版画集》。',
@@ -219,7 +220,7 @@ export const EUROPE_COMPOSERS: Composer[] = [
     years: '1882 — 1971年',
     era: 'modern20',
     region: '俄国，后居法国、美国',
-    x: 62, y: 33,
+    x: 59.2, y: 36.5, // 俄罗斯西部代表点
     avatar: '/avatars/stravinsky.png',
     intro: '20世纪最具影响力的作曲家之一，《春之祭》首演引发骚动，改写现代音乐语言。',
     works: '《春之祭》《火鸟》《彼得鲁什卡》，后期转向新古典主义与序列写作。',

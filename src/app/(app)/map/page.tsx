@@ -179,7 +179,7 @@ export default function MusicMapPage() {
                     aria-pressed={active?.id === c.id}
                     style={{ left: `${c.x}%`, top: `${c.y}%` }}
                     className={cn(
-                      'group absolute -translate-x-1/2 -translate-y-1/2 rounded-lg outline-none transition-all duration-300 focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none',
+                      'group absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full outline-none transition-all duration-300 focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none sm:h-14 sm:w-14',
                       active?.id === c.id ? 'z-20' : 'z-10',
                       lit ? 'opacity-100' : 'pointer-events-none scale-75 opacity-0'
                     )}
@@ -196,7 +196,7 @@ export default function MusicMapPage() {
                         )}
                       /> : <span className="relative flex h-12 w-12 items-center justify-center rounded-full border-2 border-primary/50 bg-card font-serif text-xl text-primary sm:h-14 sm:w-14">{c.name.slice(0, 1)}</span>}
                     </span>
-                    <span className="relative mt-1.5 block rounded bg-background/90 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur">{c.name}</span>
+                    <span className="absolute left-1/2 top-full mt-1.5 block -translate-x-1/2 whitespace-nowrap rounded bg-background/90 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur">{c.name}</span>
                   </button>
                 )
               })}

@@ -29,7 +29,7 @@ export const mapMusicianPatchSchema = fields.partial().extend({
 })
 
 export type MapMusicianRow = Omit<Composer, 'avatar'> & { map_kind: MapKind; teacher_id: string; avatar_file_id: string | null }
-const builtin = (composer: Composer, mapKind: MapKind): MapMusician => ({ ...composer, x: 25 + composer.x / 2, origin: 'builtin', map_kind: mapKind, teacher_id: null, avatar_file_id: null })
+const builtin = (composer: Composer, mapKind: MapKind): MapMusician => ({ ...composer, origin: 'builtin', map_kind: mapKind, teacher_id: null, avatar_file_id: null })
 export function builtinMapMusicians(): MapMusician[] {
   return [...CHINA_COMPOSERS.map(composer => builtin(composer, 'china')), ...EUROPE_COMPOSERS.map(composer => builtin(composer, 'europe'))]
 }

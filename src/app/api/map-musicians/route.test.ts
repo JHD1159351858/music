@@ -59,7 +59,7 @@ async function download(fileId: string, userId?: string) {
   return downloadFile(await request(access.url, userId), context(fileId.slice(6)))
 }
 
-test('authenticated map list preserves builtins, converts their x once, filters and exposes persisted custom entries to students', async () => {
+test('authenticated map list preserves full-image coordinates for builtins and persisted custom entries', async () => {
   assert.equal((await GET(await request('/api/map-musicians'))).status, 401)
   const before = CHINA_COMPOSERS.map(composer => composer.x)
   const entry = await create()
@@ -72,13 +72,14 @@ test('authenticated map list preserves builtins, converts their x once, filters 
   assert.equal(response.status, 200)
   const rows = await response.json() as MapMusician[]
   assert.equal(rows.length, CHINA_COMPOSERS.length + EUROPE_COMPOSERS.length + 1)
-  for (const builtin of CHINA_COMPOSERS) {
+  for (const builtin of [...CHINA_COMPOSERS, ...EUROPE_COMPOSERS]) {
     const row = rows.find(item => item.id === builtin.id)
     assert.equal(row?.origin, 'builtin')
-    assert.equal(row?.x, 25 + builtin.x / 2)
+    assert.equal(row?.x, builtin.x)
     assert.equal(row?.y, builtin.y)
     assert.equal(row?.teacher_id, null)
   }
+  assert.deepEqual({ x: rows.find(row => row.id === entry.id)?.x, y: rows.find(row => row.id === entry.id)?.y }, { x: 62.5, y: 50 })
   assert.deepEqual(CHINA_COMPOSERS.map(composer => composer.x), before)
   const europe = await (await GET(await request('/api/map-musicians?map_kind=europe', student))).json() as MapMusician[]
   assert.equal(europe.length, EUROPE_COMPOSERS.length)
