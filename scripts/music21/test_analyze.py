@@ -181,6 +181,14 @@ class AnalyzeTests(unittest.TestCase):
         result = self.call(mxl(score(), extras={"unrelated.xml": b"not MusicXML"}), "score.mxl")
         self.assertEqual(result["noteCount"], 1)
 
+    def test_mxl_rootfile_media_type_is_optional(self):
+        target = io.BytesIO()
+        with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("META-INF/container.xml", "<container><rootfiles><rootfile full-path='score.xml'/></rootfiles></container>")
+            archive.writestr("score.xml", score())
+        result = self.call(target.getvalue(), "score.mxl")
+        self.assertEqual(result["noteCount"], 1)
+
     def test_standard_public_doctype_is_accepted_without_fetching(self):
         xml = score().replace(b"<score-partwise", b'<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd"><score-partwise', 1)
         self.assertEqual(self.call(xml)["noteCount"], 1)

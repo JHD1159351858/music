@@ -90,7 +90,7 @@ def musicxml_bytes(data, extension):
             if container.tag != "container":
                 reject("MXL 容器描述格式无效。")
             roots = [element for element in container.findall("./rootfiles/rootfile")
-                     if element.get("media-type") == "application/vnd.recordare.musicxml+xml"]
+                     if element.get("media-type") in (None, "application/vnd.recordare.musicxml+xml")]
             if len(roots) != 1:
                 reject("MXL 必须明确声明一个 MusicXML 主谱面。")
             name = roots[0].get("full-path", "")

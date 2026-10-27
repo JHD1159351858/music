@@ -97,8 +97,8 @@ export function MusicMapViewport({ src, title, era, children, selectingPoint = f
     startGesture()
   }
 
-  return <div className="w-full min-w-0">
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-3 py-2">
+  return <div className="flex h-full min-h-0 w-full min-w-0 flex-col">
+    <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-3 py-2">
       <div className="text-xs text-muted-foreground"><span className="mr-2 font-medium text-foreground">{era}</span>{title} · 地域分布示意</div>
       <div className="flex items-center gap-1" aria-label="地图缩放工具">
         <Button variant="ghost" size="icon" aria-label="缩小地图" disabled={view.zoom <= 1} onClick={() => update(zoomMapAt(viewRef.current, viewRef.current.zoom / 1.25, { x: 0, y: 0 }))}><Minus className="size-4" /></Button>
@@ -107,7 +107,7 @@ export function MusicMapViewport({ src, title, era, children, selectingPoint = f
         <Button variant="ghost" size="sm" aria-label="显示完整地图" onClick={() => update(INITIAL_MAP_VIEW)}><Maximize className="size-4" />全图</Button>
       </div>
     </div>
-    <div ref={canvasRef} role="group" aria-label="音乐史地图画布" className={`relative h-[360px] w-full touch-none select-none overflow-hidden bg-muted/20 sm:h-[480px] lg:h-[560px] xl:h-[clamp(480px,65dvh,680px)] ${dragging ? 'cursor-grabbing' : selectingPoint ? 'cursor-crosshair' : 'cursor-grab'}`} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={event => { moved.current = true; up(event) }} onLostPointerCapture={up} onDragStart={event => event.preventDefault()} onClickCapture={event => {
+    <div ref={canvasRef} role="group" aria-label="音乐史地图画布" className={`relative h-[360px] w-full touch-none select-none overflow-hidden bg-muted/20 sm:h-[480px] lg:h-auto lg:min-h-0 lg:flex-1 ${dragging ? 'cursor-grabbing' : selectingPoint ? 'cursor-crosshair' : 'cursor-grab'}`} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={event => { moved.current = true; up(event) }} onLostPointerCapture={up} onDragStart={event => event.preventDefault()} onClickCapture={event => {
       if (moved.current && event.detail !== 0) { event.preventDefault(); event.stopPropagation(); moved.current = false; return }
       if (!selectingPoint) return
       event.preventDefault()

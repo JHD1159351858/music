@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { useRequireUser } from '@/lib/user-context'
 import { ChatPanel } from '@/components/chat-panel'
 import { Button } from '@/components/ui/button'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { MusicMapViewport } from '@/components/map/music-map-viewport'
 import { MapMusicianEditor, type MapMusicianDraft } from '@/components/map/map-musician-editor'
 import type { MapPoint } from '@/components/map/map-viewport-math'
@@ -165,8 +166,9 @@ export default function MusicMapPage() {
       </nav>
 
       <section aria-label="音乐史地图与人物资料" className="overflow-hidden rounded-xl border border-border bg-card">
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
-          <div role="region" aria-label={map === 'china' ? '中国音乐史地图' : '欧洲音乐史地图'} className="min-w-0">
+        <ResizablePanelGroup orientation="horizontal" className="!block !h-auto lg:!flex lg:!h-[clamp(36rem,calc(100dvh-18rem),60rem)]">
+          <ResizablePanel id="music-history-map" defaultSize="66.67%" minSize="30%" className="lg:h-full">
+          <div role="region" aria-label={map === 'china' ? '中国音乐史地图' : '欧洲音乐史地图'} className="min-w-0 lg:h-full">
             <MusicMapViewport key={map} src={map === 'china' ? '/maps/china.png' : '/maps/europe.png'} title={map === 'china' ? '中国地图' : '欧洲地图'} era={currentEra?.label} selectingPoint={!!placement} onSelectPoint={point => { if (placement) { setEditor({ ...placement, point }); setPlacement(null) } }}>
               {composers.map((c) => {
                 const lit = litIds.has(c.id)
@@ -208,11 +210,14 @@ export default function MusicMapPage() {
               )}
             </MusicMapViewport>
           </div>
+          </ResizablePanel>
 
-          <aside role="region" aria-label="人物资料" className="min-w-0 border-t border-border bg-card p-5 lg:border-l lg:border-t-0 xl:p-6">
+          <ResizableHandle withHandle aria-label="调整地图与 AI 对话宽度" className="hidden w-2 shrink-0 bg-border/60 transition-colors hover:bg-primary/30 lg:flex" />
+          <ResizablePanel id="music-history-details" defaultSize="33.33%" minSize="30%" className="lg:h-full">
+          <aside role="region" aria-label="人物资料" className="min-w-0 border-t border-border bg-card p-5 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-y-auto lg:border-t-0 xl:p-6">
             {active ? (
               <>
-                <div className="flex items-center gap-3 border-b border-border pb-4">
+                <div className="flex shrink-0 items-center gap-3 border-b border-border pb-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {active.avatar ? <img src={active.avatar} alt="" className="h-14 w-14 shrink-0 rounded-full border-2 border-primary/60 object-cover" /> : <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-primary/60 bg-primary/10 font-serif text-2xl text-primary">{active.name.slice(0, 1)}</span>}
                   <div className="min-w-0">
@@ -225,11 +230,11 @@ export default function MusicMapPage() {
                 {canManage && <div className="mt-3 flex flex-wrap gap-2"><Button variant="outline" size="sm" disabled={!!placement} onClick={() => { if (!placement) setEditor({ musician: active, point: { x: active.x, y: active.y } }) }}><Pencil />编辑音乐家</Button><Button variant="ghost" size="sm" disabled={!!placement} onClick={() => { if (!placement) { setDeleteTarget(active); setDeleteError('') } }}><Trash2 />删除音乐家</Button></div>}
 
                 {showChat ? (
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-4 flex flex-col gap-3 lg:min-h-0 lg:flex-1">
                     <Button variant="ghost" size="sm" onClick={() => setShowChat(false)} className="-ml-2 text-primary"><ArrowLeft />返回人物资料</Button>
                     <ChatPanel
                       key={active.id}
-                      className="h-[460px]"
+                      className="h-[460px] lg:h-auto lg:flex-1"
                       context={{ kind: 'composer', composerId: active.id }}
                       autoPrompt={`请介绍${map === 'china' ? '中国音乐家' : '作曲家'}${active.name}：生平、创作经历与作品信息、代表作，以及代表作的时代背景。`}
                       placeholder={`继续了解${active.name}…`}
@@ -264,7 +269,8 @@ export default function MusicMapPage() {
               </div>
             )}
           </aside>
-        </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
 
         <div className="border-t border-border bg-muted/15 px-5 py-4 xl:px-6">
           <div className="flex items-center gap-2 text-primary"><BookOpen className="h-4 w-4" /><h2 className="text-sm font-medium">{currentEra?.label}{map === 'europe' ? ' · 同期中国音乐' : ' · 音乐人物'}</h2></div>
