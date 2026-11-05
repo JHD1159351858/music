@@ -6,10 +6,12 @@ import { toast } from 'sonner'
 import type { Score } from '@/lib/teaching-types'
 import { SCORE_PERIOD_MAX_LENGTH, SCORE_TYPES } from '@/lib/score-classification'
 import type { Classroom } from '@/lib/class-types'
-import { getScorePages } from '@/lib/score-pages'
+import { getScorePages, MAX_SCORE_PAGES } from '@/lib/score-pages'
 import { uploadScorePages, type ScoreUploadPage, type UploadedScoreFile } from './score-upload'
 import { ScoreCoverUpload } from './score-cover-upload'
 import { createScoreCoverCleanup } from './score-cover-cleanup'
+import type { ScorePdfPreviewPage } from './score-pdf'
+import { ScorePdfPicker } from './score-pdf-picker'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -33,6 +35,18 @@ interface Draft {
   target_classes: string[]
   status: 'pending' | 'saving' | 'done' | 'error'
   error: string
+}
+
+const scoreFileTypes = 'image/*,application/pdf,.pdf'
+const isPdf = (file: { type: string; name: string }) => file.type === 'application/pdf' || /\.pdf$/i.test(file.name)
+const makePage = (file: File): ScoreUploadPage => ({ id: crypto.randomUUID(), file, uploaded: null })
+
+function makeDraft(files: File[], title = files[0].name.replace(/\.[^.]+$/, '')): Draft {
+  return {
+    id: crypto.randomUUID(), pages: files.map(makePage), title, composer: '',
+    cover_file: null, cover: null,
+    category: '', score_type: '', period: '', tips: '', published: false, target_classes: [], status: 'pending', error: '',
+  }
 }
 
 async function responseJson<T>(res: Response): Promise<T> {
@@ -64,6 +78,11 @@ export function ScoreEditor({ userId, score, isTeacher, classNames, onClose, onS
   }] : [])
   const [uploadMode, setUploadMode] = useState('grouped')
   const [saving, setSaving] = useState(false)
+  const [pdfProgress, setPdfProgress] = useState('')
+  const [pdfError, setPdfError] = useState('')
+  const [pdfPreview, setPdfPreview] = useState<{ file: File; pages: ScorePdfPreviewPage[] } | null>(null)
+  const pdfImport = useRef<AbortController | null>(null)
+  const pdfBusy = Boolean(pdfProgress || pdfPreview)
   const [teacherClassNames, setTeacherClassNames] = useState<string[]>([])
   const [classLoading, setClassLoading] = useState(isTeacher)
   const [classError, setClassError] = useState('')
@@ -75,7 +94,7 @@ export function ScoreEditor({ userId, score, isTeacher, classNames, onClose, onS
   }))
   useEffect(() => {
     mounted.current = true
-    return () => { mounted.current = false; coverCleanup.discardAll() }
+    return () => { mounted.current = false; pdfImport.current?.abort(); coverCleanup.discardAll() }
   }, [coverCleanup])
   useEffect(() => {
     if (!isTeacher) return
@@ -93,7 +112,7 @@ export function ScoreEditor({ userId, score, isTeacher, classNames, onClose, onS
   const completed = drafts.filter((d) => d.status === 'done').length
   const pending = drafts.filter((d) => d.status !== 'done')
   const update = (id: string, patch: Partial<Draft>) => setDrafts((all) => all.map((d) => d.id === id ? { ...d, ...patch } : d))
-  const close = () => { coverCleanup.discardAll(); onClose() }
+  const close = () => { pdfImport.current?.abort(); coverCleanup.discardAll(); onClose() }
   const changeCover = (draft: Draft, file: File | null) => {
     coverCleanup.discard(draft.cover?.fileId)
     update(draft.id, { cover_file: file, cover: null, status: 'pending', error: '' })
@@ -107,41 +126,88 @@ export function ScoreEditor({ userId, score, isTeacher, classNames, onClose, onS
   </div>
 
   const changePages = (id: string, change: (pages: ScoreUploadPage[]) => ScoreUploadPage[]) => setDrafts((all) => all.map((draft) => draft.id === id ? { ...draft, pages: change(draft.pages), status: 'pending', error: '' } : draft))
+  const runPdf = async (label: string, run: (signal: AbortSignal, progress: (done: number, total: number) => void) => Promise<void>) => {
+    if (pdfImport.current) return
+    const controller = new AbortController()
+    pdfImport.current = controller
+    setPdfError('')
+    setPdfProgress(`${label}…`)
+    try {
+      await run(controller.signal, (done, total) => {
+        if (!controller.signal.aborted) setPdfProgress(`${label}：${done} / ${total} 页`)
+      })
+    } catch (error: unknown) {
+      if (!controller.signal.aborted) setPdfError(error instanceof Error ? error.message : 'PDF 处理失败，请重试。')
+    } finally {
+      if (pdfImport.current === controller) {
+        pdfImport.current = null
+        if (mounted.current) setPdfProgress('')
+      }
+    }
+  }
+  const cancelPdfWork = () => {
+    pdfImport.current?.abort()
+    pdfImport.current = null
+    setPdfProgress('')
+  }
+  const importPdf = (file: File) => runPdf('正在识别 PDF 谱页', async (signal, progress) => {
+    const { scanScorePdf } = await import('./score-pdf')
+    const pages = await scanScorePdf(file, signal, progress)
+    if (!signal.aborted) setPdfPreview({ file, pages })
+  })
+  const confirmPdf = (groups: number[][]) => {
+    if (!pdfPreview) return
+    const { file } = pdfPreview
+    void runPdf('正在转换已选谱页', async (signal, progress) => {
+      const { renderScorePdf } = await import('./score-pdf')
+      const converted = await renderScorePdf(file, groups, signal, progress)
+      if (signal.aborted) return
+      const title = file.name.replace(/\.pdf$/i, '')
+      setDrafts(all => [...all, ...converted.map((pages, index) => makeDraft(pages, converted.length > 1 ? `${title}（曲目 ${index + 1}）` : title))])
+      setPdfPreview(null)
+    })
+  }
+
   const chooseFiles = (files: FileList | null, draftId?: string) => {
-    if (!files?.length) return
+    if (!files?.length || pdfBusy || pdfImport.current || saving) return
     const selected = Array.from(files)
+    setPdfError('')
     if (selected.some((file) => file.size > 100 * 1024 * 1024)) {
       toast.error('单个琴谱文件不能超过 100MB')
       return
     }
-    if (selected.some((file) => !file.type.startsWith('image/') && (!isTeacher || file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')))) {
+    if (!isTeacher && selected.some(isPdf)) {
+      if (draftId || selected.length !== 1) {
+        setPdfError('请单独选择一个 PDF，再确认要导入的曲目和页码。')
+        return
+      }
+      void importPdf(selected[0])
+      return
+    }
+    if (selected.some((file) => !file.type.startsWith('image/') && (!isTeacher || !isPdf(file)))) {
       toast.error(isTeacher ? '请选择图片或 PDF 琴谱' : '个人琴谱请选择图片文件')
       return
     }
     const existingPages = draftId ? drafts.find((draft) => draft.id === draftId)?.pages ?? [] : []
     const grouped = !!draftId || uploadMode === 'grouped'
-    if (grouped && existingPages.length + selected.length > 50) {
-      toast.error('每份琴谱最多添加 50 张图片')
+    if (grouped && existingPages.length + selected.length > MAX_SCORE_PAGES) {
+      toast.error(`每份琴谱最多添加 ${MAX_SCORE_PAGES} 张图片`)
       return
     }
     if (grouped && existingPages.length + selected.length > 1 && (selected.some(file => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) || existingPages.some(page => (page.uploaded?.type ?? page.file?.type) === 'application/pdf' || (page.uploaded?.name ?? page.file?.name)?.toLowerCase().endsWith('.pdf')))) {
       toast.error('多页琴谱请选择图片；PDF 请作为一份独立琴谱上传')
       return
     }
-    const page = (file: File): ScoreUploadPage => ({ id: crypto.randomUUID(), file, uploaded: null })
     if (draftId) {
-      changePages(draftId, (pages) => [...pages, ...selected.map(page)])
+      changePages(draftId, (pages) => [...pages, ...selected.map(makePage)])
       return
     }
     const groups = grouped ? [selected] : selected.map(file => [file])
-    setDrafts((all) => [...all, ...groups.map((files): Draft => ({
-      id: crypto.randomUUID(), pages: files.map(page), title: files[0].name.replace(/\.[^.]+$/, ''), composer: '',
-      cover_file: null, cover: null,
-      category: '', score_type: '', period: '', tips: '', published: false, target_classes: [], status: 'pending', error: '',
-    }))])
+    setDrafts((all) => [...all, ...groups.map(files => makeDraft(files))])
   }
 
   const save = async () => {
+    if (pdfBusy || pdfImport.current) return
     const invalid = pending.filter((d) => !d.title.trim() || !d.composer.trim() || !d.category || !d.pages.length)
     if (invalid.length) {
       invalid.forEach((d) => update(d.id, { status: 'error', error: isTeacher ? '请补全曲名、作曲家、分类，并选择琴谱文件' : '请补全曲名、作曲家、分类，并选择琴谱图片' }))
@@ -208,15 +274,18 @@ export function ScoreEditor({ userId, score, isTeacher, classNames, onClose, onS
   const content = <>
         {embedded ? <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4"><div><h2 className="text-sm font-semibold">编辑琴谱信息</h2><p className="mt-1 text-xs text-muted-foreground">曲目封面与练习谱面分别维护</p></div><div className="flex shrink-0 items-center gap-1">{headerActions}<Button type="button" size="icon" variant="ghost" aria-label="关闭琴谱编辑面板" disabled={saving} onClick={close}><X className="size-4" /></Button></div></div> : <DialogHeader>
           <DialogTitle>{score ? '编辑琴谱属性与文件' : isTeacher ? '上传琴谱' : '上传个人琴谱'}</DialogTitle>
-          <DialogDescription>{score ? '分别维护曲目封面与练习谱面，可追加、移除或调整谱页顺序。' : isTeacher ? '封面与谱面分别维护。一份琴谱可包含多张图片，也可批量上传独立曲目。PDF 请单独上传，默认未发布。' : '封面与谱面分别维护，个人琴谱仅本人可见，保存后自动加入「我要练」。'}每份最多 50 张谱面图片，单文件不超过 100MB。</DialogDescription>
+          <DialogDescription>{score ? '分别维护曲目封面与练习谱面，可追加、移除或调整谱页顺序。' : isTeacher ? '封面与谱面分别维护。一份琴谱可包含多张图片，也可批量上传独立曲目。PDF 请单独上传，默认未发布。' : '支持图片和 PDF。PDF 在浏览器内识别谱页，确认后可拆为多首。个人琴谱仅本人可见，保存后自动加入「我要练」。'}每份琴谱最多 {MAX_SCORE_PAGES} 页，单文件不超过 100MB。</DialogDescription>
         </DialogHeader>}
         <div className={embedded ? 'min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4' : 'space-y-4'}>
-        {!score && <div className="space-y-2"><Label htmlFor="score-upload-mode">上传方式</Label><Select value={uploadMode} disabled={saving} onValueChange={setUploadMode}><SelectTrigger id="score-upload-mode" className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="grouped">一份多页琴谱（多张图片属于同一首曲目）</SelectItem><SelectItem value="separate">批量独立琴谱（每个文件为一首曲目）</SelectItem></SelectContent></Select></div>}
-        {(!embedded || !score) && <label className={`flex cursor-pointer items-center justify-center gap-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-5 text-sm text-primary ${saving ? 'pointer-events-none opacity-50' : ''}`}>
+        {!score && <div className="space-y-2"><Label htmlFor="score-upload-mode">上传方式</Label><Select value={uploadMode} disabled={saving || pdfBusy} onValueChange={setUploadMode}><SelectTrigger id="score-upload-mode" className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="grouped">一份多页琴谱（多张图片属于同一首曲目）</SelectItem><SelectItem value="separate">批量独立琴谱（每个文件为一首曲目）</SelectItem></SelectContent></Select></div>}
+        {(!embedded || !score) && <label className={`flex cursor-pointer items-center justify-center gap-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-5 text-sm text-primary ${saving || pdfBusy ? 'pointer-events-none opacity-50' : ''}`}>
           <Upload className="h-5 w-5" />
-          {score ? '追加谱页（可多选）' : uploadMode === 'grouped' ? drafts.length ? '添加另一份琴谱（可多选谱页）' : '选择一份琴谱的全部图片（可多选）' : '选择多份独立琴谱文件（可多选）'}
-          <input type="file" aria-label={score ? '追加琴谱页面' : '选择琴谱文件'} accept={isTeacher ? 'image/*,application/pdf,.pdf' : 'image/*'} multiple disabled={saving} className="hidden" onChange={(event) => { chooseFiles(event.target.files, score?.id); event.target.value = '' }} />
+          {score ? '追加谱页（可多选）' : !isTeacher ? '选择琴谱图片（可多选）或单个 PDF' : uploadMode === 'grouped' ? drafts.length ? '添加另一份琴谱（可多选谱页）' : '选择一份琴谱的全部图片（可多选）' : '选择多份独立琴谱文件（可多选）'}
+          <input type="file" aria-label={score ? '追加琴谱页面' : '选择琴谱文件'} accept={isTeacher || !score ? scoreFileTypes : 'image/*'} multiple disabled={saving || pdfBusy} className="hidden" onChange={(event) => { chooseFiles(event.target.files, score?.id); event.target.value = '' }} />
         </label>}
+        {pdfProgress && <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground"><p role="status">{pdfProgress}</p><Button type="button" variant="ghost" size="sm" onClick={cancelPdfWork}>取消处理</Button></div>}
+        {pdfError && <p role="alert" className="text-sm text-destructive">{pdfError}</p>}
+        {pdfPreview && <ScorePdfPicker name={pdfPreview.file.name} pages={pdfPreview.pages} busy={Boolean(pdfProgress)} onCancel={() => { setPdfPreview(null); setPdfError('') }} onConfirm={confirmPdf} />}
         {isTeacher && classError && <div role="alert" className="flex items-center gap-2 text-sm text-destructive"><span>读取已创建班级失败：{classError}，可继续使用当前已知班级。</span><Button type="button" variant="outline" size="sm" onClick={() => setClassReload((value) => value + 1)}>重试</Button></div>}
         <div className="space-y-5">
           {drafts.map((draft, index) => (
@@ -233,7 +302,7 @@ export function ScoreEditor({ userId, score, isTeacher, classNames, onClose, onS
                 <h3 className="text-sm font-medium">琴谱文件 *</h3>
                 {draft.pages.map((page, pageIndex) => <div key={page.id} className="flex items-center gap-2 rounded-md border border-border px-2 py-1.5 text-xs"><span className="shrink-0 text-primary">第 {pageIndex + 1} 页</span><span className="min-w-0 flex-1 truncate" title={page.file?.name ?? page.uploaded?.name}>{page.file?.name ?? page.uploaded?.name}</span><Button type="button" variant="ghost" size="icon" aria-label={`第 ${pageIndex + 1} 页上移`} disabled={pageIndex === 0} onClick={() => changePages(draft.id, pages => { const next = [...pages]; [next[pageIndex - 1], next[pageIndex]] = [next[pageIndex], next[pageIndex - 1]]; return next })}><ArrowUp className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" aria-label={`第 ${pageIndex + 1} 页下移`} disabled={pageIndex === draft.pages.length - 1} onClick={() => changePages(draft.id, pages => { const next = [...pages]; [next[pageIndex], next[pageIndex + 1]] = [next[pageIndex + 1], next[pageIndex]]; return next })}><ArrowDown className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="sm" aria-label={`移除第 ${pageIndex + 1} 页`} onClick={() => changePages(draft.id, pages => pages.filter(item => item.id !== page.id))}>移除</Button></div>)}
                 {!draft.pages.length && <p className="text-xs text-muted-foreground">尚无谱页，请添加琴谱图片。</p>}
-                <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-primary"><Upload className="h-3.5 w-3.5" />追加谱页<input type="file" aria-label={`为第 ${index + 1} 份琴谱追加页面`} accept={isTeacher ? 'image/*,application/pdf,.pdf' : 'image/*'} multiple disabled={saving || draft.status === 'done'} className="hidden" onChange={event => { chooseFiles(event.target.files, draft.id); event.target.value = '' }} /></label>
+                <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-primary"><Upload className="h-3.5 w-3.5" />追加谱页<input type="file" aria-label={`为第 ${index + 1} 份琴谱追加页面`} accept={isTeacher ? 'image/*,application/pdf,.pdf' : 'image/*'} multiple disabled={saving || pdfBusy || draft.status === 'done'} className="hidden" onChange={event => { chooseFiles(event.target.files, draft.id); event.target.value = '' }} /></label>
               </div>
               {!embedded && properties(draft)}
               <div className="space-y-2"><Label htmlFor={`tips-${draft.id}`}>{isTeacher ? '教学要点 / 教师提醒' : '练习备注'}（选填）</Label><Textarea id={`tips-${draft.id}`} rows={2} value={draft.tips} onChange={(e) => update(draft.id, { tips: e.target.value })} placeholder={isTeacher ? '为学生留下一句练习提醒' : '记录自己的练习要点'} /></div>
@@ -245,7 +314,7 @@ export function ScoreEditor({ userId, score, isTeacher, classNames, onClose, onS
         </div>
         <div className={`flex justify-between gap-3 border-t border-border ${embedded ? 'shrink-0 flex-col-reverse px-5 py-4' : 'items-center pt-4'}`}>
           <span className="text-xs text-muted-foreground">{completed ? `${completed} / ${drafts.length} 份已保存；重试仅处理未成功条目` : '同一琴谱的多张图片共用曲目属性，按页序保存'}</span>
-          {pending.length ? <Button onClick={save} disabled={saving} className="shrink-0 gap-2">{saving && <Loader2 className="h-4 w-4 animate-spin" />}{saving ? '正在保存…' : drafts.some((d) => d.status === 'error') ? `重试未成功的 ${pending.length} 份` : score ? '保存修改' : `保存 ${pending.length} 份琴谱`}</Button> : <Button onClick={close}>{completed ? '完成' : '关闭'}</Button>}
+          {pending.length ? <Button onClick={save} disabled={saving || pdfBusy} className="shrink-0 gap-2">{saving && <Loader2 className="h-4 w-4 animate-spin" />}{saving ? '正在保存…' : drafts.some((d) => d.status === 'error') ? `重试未成功的 ${pending.length} 份` : score ? '保存修改' : `保存 ${pending.length} 份琴谱`}</Button> : <Button onClick={close}>{completed ? '完成' : '关闭'}</Button>}
         </div>
   </>
   return embedded ? <section aria-label="琴谱编辑面板" className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card">{content}</section> : <Dialog open onOpenChange={(open) => { if (!open && !saving) close() }}><DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-3xl" showCloseButton={!saving}>{content}</DialogContent></Dialog>

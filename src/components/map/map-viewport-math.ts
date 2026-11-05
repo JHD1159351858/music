@@ -27,3 +27,25 @@ export function mapPointFromClick(point: MapPoint, fitted: MapSize, view: MapVie
   const y = ((point.y - view.y) / view.zoom / fitted.height + 0.5) * 100
   return x >= 0 && x <= 100 && y >= 0 && y <= 100 ? { x, y } : null
 }
+
+const PORTRAIT_OFFSETS = [
+  { x: 0, y: 0 }, { x: 0, y: -50 }, { x: 50, y: 0 }, { x: 0, y: 50 }, { x: -50, y: 0 },
+  { x: -36, y: -36 }, { x: 36, y: -36 }, { x: -36, y: 36 }, { x: 36, y: 36 },
+]
+
+export function placeMapPortraits(points: MapPoint[], fitted: MapSize, zoom: number): MapPoint[] {
+  const centers: MapPoint[] = []
+  const width = fitted.width * zoom
+  const height = fitted.height * zoom
+  return points.map(point => {
+    const x = point.x / 100 * width
+    const y = point.y / 100 * height
+    const offset = PORTRAIT_OFFSETS.find(({ x: dx, y: dy }) => {
+      const center = { x: x + dx, y: y + dy }
+      if ((dx || dy) && (center.x < 22 || center.y < 22 || center.x > width - 22 || center.y > height - 22)) return false
+      return centers.every(other => Math.hypot(center.x - other.x, center.y - other.y) >= 48)
+    }) ?? PORTRAIT_OFFSETS[0]
+    centers.push({ x: x + offset.x, y: y + offset.y })
+    return offset
+  })
+}

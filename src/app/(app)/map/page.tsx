@@ -7,9 +7,10 @@ import { ChatPanel } from '@/components/chat-panel'
 import { Button } from '@/components/ui/button'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { MusicMapViewport } from '@/components/map/music-map-viewport'
+import { MapPortraits } from '@/components/map/map-portraits'
 import { MapMusicianEditor, type MapMusicianDraft } from '@/components/map/map-musician-editor'
 import type { MapPoint } from '@/components/map/map-viewport-math'
-import type { MapKind, MapMusician } from '@/lib/map-musician-types'
+import { CHINA_MAP_REVISION, type MapKind, type MapMusician } from '@/lib/map-musician-types'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import {
@@ -20,6 +21,10 @@ import { Landmark, Globe2, Info, ExternalLink, BookOpen, Sparkles, ArrowLeft, Pl
 
 interface Placement { musician: MapMusician | null; draft?: MapMusicianDraft }
 interface Editor extends Placement { point: MapPoint }
+
+// 自然资源部 GS(2023)2767 标准图的完整公开图幅，存档自深圳新闻网转载图。
+const CHINA_MAP_SRC = '/maps/china-standard-gs2023-2767.png'
+const CHINA_MAP_SIZE = { width: 1256, height: 885 }
 
 async function responseJson<T>(response: Response): Promise<T> {
   const value: unknown = await response.json()
@@ -70,6 +75,13 @@ export default function MusicMapPage() {
   if (!user) return null
 
   const canManage = active?.origin === 'custom' && active.teacher_id === user.id && user.role === 'teacher'
+  const needsNewPoint = active?.map_kind === 'china' && active.map_revision !== CHINA_MAP_REVISION
+  const chinaPortraits = map === 'china' ? composers.filter(person => litIds.has(person.id) && person.map_revision === CHINA_MAP_REVISION) : []
+
+  function selectMusician(id: string) {
+    setActiveId(id)
+    setShowChat(false)
+  }
 
   function saveMusician(saved: MapMusician) {
     setMusicians(current => current.some(item => item.id === saved.id) ? current.map(item => item.id === saved.id ? saved : item) : [...current, saved])
@@ -166,16 +178,26 @@ export default function MusicMapPage() {
       </nav>
 
       <section aria-label="音乐史地图与人物资料" className="overflow-hidden rounded-xl border border-border bg-card">
-        <ResizablePanelGroup orientation="horizontal" className="!block !h-auto lg:!flex lg:!h-[clamp(36rem,calc(100dvh-18rem),60rem)]">
+        <ResizablePanelGroup orientation="horizontal" className={cn('!block !h-auto lg:!flex', map === 'china' ? 'lg:!h-[clamp(34rem,65dvh,49rem)]' : 'lg:!h-[clamp(36rem,calc(100dvh-18rem),60rem)]')}>
           <ResizablePanel id="music-history-map" defaultSize="66.67%" minSize="30%" className="lg:h-full">
           <div role="region" aria-label={map === 'china' ? '中国音乐史地图' : '欧洲音乐史地图'} className="min-w-0 lg:h-full">
-            <MusicMapViewport key={map} src={map === 'china' ? '/maps/china.png' : '/maps/europe.png'} title={map === 'china' ? '中国地图' : '欧洲地图'} era={currentEra?.label} selectingPoint={!!placement} onSelectPoint={point => { if (placement) { setEditor({ ...placement, point }); setPlacement(null) } }}>
-              {composers.map((c) => {
+            <MusicMapViewport key={map} src={map === 'china' ? CHINA_MAP_SRC : '/maps/europe.png'} title={map === 'china' ? '中国标准地图' : '欧洲地图'} era={currentEra?.label} selectingPoint={!!placement} onSelectPoint={point => { if (placement) { setEditor({ ...placement, point }); setPlacement(null) } }}
+              imageSize={map === 'china' ? CHINA_MAP_SIZE : undefined}
+              darkDisplay={map === 'china' && user.role === 'student'}
+              renderOverlay={map === 'china' ? (fitted, zoom) => (
+                <MapPortraits people={chinaPortraits} fitted={fitted} zoom={zoom} selectedId={activeId} disabled={!!placement} onSelect={selectMusician} />
+              ) : undefined}
+              attribution={map === 'china' ? <>
+                <a href="https://www.mnr.gov.cn/sj/sjfw/ch/" target="_blank" rel="noreferrer" className="font-medium text-foreground underline-offset-4 hover:text-primary hover:underline">自然资源部标准地图</a>
+                <span className="rounded-sm border border-border px-1.5 py-0.5 tabular-nums">原图审图号 GS(2023)2767号</span>
+                <a href={CHINA_MAP_SRC} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline sm:ml-auto">查看标准原图<ExternalLink className="size-3" /></a>
+              </> : undefined}>
+              {map === 'europe' && composers.map((c) => {
                 const lit = litIds.has(c.id)
                 return (
                   <button
                     key={c.id}
-                    onClick={() => { if (lit && !placement) { setActiveId(c.id); setShowChat(false) } }}
+                    onClick={() => { if (lit && !placement) selectMusician(c.id) }}
                     disabled={!lit}
                     aria-label={`选择${c.name}`}
                     aria-pressed={active?.id === c.id}
@@ -227,7 +249,10 @@ export default function MusicMapPage() {
                   </div>
                 </div>
 
-                {canManage && <div className="mt-3 flex flex-wrap gap-2"><Button variant="outline" size="sm" disabled={!!placement} onClick={() => { if (!placement) setEditor({ musician: active, point: { x: active.x, y: active.y } }) }}><Pencil />编辑音乐家</Button><Button variant="ghost" size="sm" disabled={!!placement} onClick={() => { if (!placement) { setDeleteTarget(active); setDeleteError('') } }}><Trash2 />删除音乐家</Button></div>}
+                {canManage && <div className="mt-3 flex flex-wrap gap-2"><Button variant="outline" size="sm" disabled={!!placement} onClick={() => {
+                  if (needsNewPoint) setPlacement({ musician: active })
+                  else setEditor({ musician: active, point: { x: active.x, y: active.y } })
+                }}><Pencil />{needsNewPoint ? '重新定位' : '编辑音乐家'}</Button><Button variant="ghost" size="sm" disabled={!!placement} onClick={() => { if (!placement) { setDeleteTarget(active); setDeleteError('') } }}><Trash2 />删除音乐家</Button></div>}
 
                 {showChat ? (
                   <div className="mt-4 flex flex-col gap-3 lg:min-h-0 lg:flex-1">
@@ -264,7 +289,7 @@ export default function MusicMapPage() {
                 <Globe2 className="mb-5 h-9 w-9 text-primary/60" />
                 <p className="text-xs text-primary">{currentEra?.span}</p>
                 <h2 className="mt-2 font-serif text-2xl font-semibold text-foreground">从一位音乐家开始</h2>
-                <p className="mt-4 text-sm leading-relaxed text-muted-foreground">选择地图上点亮的头像，在这里阅读人物简介、代表作与资料来源，也可以继续向知音提问。</p>
+                <p className="mt-4 text-sm leading-relaxed text-muted-foreground">选择地图上的人物标记，在这里阅读人物简介、代表作与资料来源，也可以继续向知音提问。</p>
                 <p className="mt-5 text-xs text-muted-foreground">{loading || loadError ? '音乐家资料尚未载入' : `当前时代收录 ${litIds.size} 位音乐人物`}</p>
               </div>
             )}
@@ -274,7 +299,14 @@ export default function MusicMapPage() {
 
         <div className="border-t border-border bg-muted/15 px-5 py-4 xl:px-6">
           <div className="flex items-center gap-2 text-primary"><BookOpen className="h-4 w-4" /><h2 className="text-sm font-medium">{currentEra?.label}{map === 'europe' ? ' · 同期中国音乐' : ' · 音乐人物'}</h2></div>
-          {map === 'europe' ? <><p className="mt-2 text-sm leading-relaxed text-muted-foreground">{currentEra?.chinaContext}</p><div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">{currentEra?.sources?.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline">{source.title}<ExternalLink className="h-3 w-3 shrink-0" /></a>)}</div></> : <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{loading || loadError ? '音乐家资料尚未载入。' : `本时代已收录 ${litIds.size} 位音乐人物。`}地图点位用于地域分布示意。</p>}
+          {map === 'europe' ? <><p className="mt-2 text-sm leading-relaxed text-muted-foreground">{currentEra?.chinaContext}</p><div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">{currentEra?.sources?.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline">{source.title}<ExternalLink className="h-3 w-3 shrink-0" /></a>)}</div></> : <>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">现代地理底图。时间线按时期筛选人物，标记表示人物相关地点。</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {composers.filter(c => litIds.has(c.id)).map(c => <Button key={c.id} type="button" variant="outline" size="sm" disabled={!!placement} aria-pressed={active?.id === c.id} onClick={() => selectMusician(c.id)}>
+                {c.name}{c.map_revision !== CHINA_MAP_REVISION && <span className="text-xs text-muted-foreground">待重新定位</span>}
+              </Button>)}
+            </div>
+          </>}
         </div>
       </section>
       {editor && <MapMusicianEditor musician={editor.musician} userId={user.id} mapKind={map} era={era} point={editor.point} initialDraft={editor.draft} onCancel={() => setEditor(null)} onSaved={saveMusician} onReselect={draft => { setPlacement({ musician: editor.musician, draft }); setEditor(null) }} />}

@@ -125,7 +125,7 @@ async function context(userId, mobile = false) {
   return result
 }
 function canvas(page) { return page.getByRole('group', { name: '音乐史地图画布', exact: true }) }
-function picture(page, kind = '中国') { return page.getByRole('region', { name: `${kind}音乐史地图`, exact: true }).getByRole('img', { name: `${kind}地图`, exact: true }) }
+function picture(page, kind = '中国') { return page.getByRole('region', { name: `${kind}音乐史地图`, exact: true }).getByRole('img', { name: kind === '中国' ? '中国标准地图' : '欧洲地图', exact: true }) }
 function card(page) { return page.getByRole('region', { name: '人物资料', exact: true }) }
 async function drag(page, point, dx, dy) {
   await page.mouse.move(point.x, point.y)
@@ -139,7 +139,7 @@ async function fullImage(page, kind = '中国') {
   const imageBox = await image.boundingBox()
   const canvasBox = await canvas(page).boundingBox()
   assert.ok(imageBox && canvasBox)
-  assert.ok(Math.abs(imageBox.width / imageBox.height - 2) < 0.01)
+  assert.ok(Math.abs(imageBox.width / imageBox.height - (kind === '中国' ? 1256 / 885 : 2)) < 0.01)
   assert.ok(imageBox.x >= canvasBox.x - 1 && imageBox.y >= canvasBox.y - 1 && imageBox.x + imageBox.width <= canvasBox.x + canvasBox.width + 1 && imageBox.y + imageBox.height <= canvasBox.y + canvasBox.height + 1)
   assert.equal(await page.getByLabel('地图缩放比例', { exact: true }).textContent(), '100%')
 }
@@ -382,7 +382,7 @@ try {
   await mobile.getByRole('button', { name: '欧洲音乐史', exact: true }).click()
   await fullImage(mobile, '欧洲')
   await noOverflow(mobile)
-  pass('390px mobile custom markers/person cards keep both complete 2:1 maps, button zoom/reset and no horizontal overflow')
+  pass('390px mobile custom markers/person cards keep both maps complete, button zoom/reset and no horizontal overflow')
 
   await card(teacherPage).getByRole('button', { name: '删除音乐家', exact: true }).click()
   const confirmation = teacherPage.getByRole('alertdialog', { name: '删除音乐家', exact: true })
@@ -411,7 +411,7 @@ try {
 
   const damagedAvatar = await uploadMapAvatar('bach.png')
   const healthyAvatar = await uploadMapAvatar('liutianhua.png')
-  const avatarRecord = (label, file, x) => ({ name: label, years: '', era: 'modern', map_kind: 'china', region: '隔离头像降级验收地区', x, y: 35, intro: '仅用于验证单个头像文件失效时的人物资料降级。', works: '', note: '', sources: [], avatar_file_id: file.fileId, avatar_receipt: file.receipt })
+  const avatarRecord = (label, file, x) => ({ name: label, years: '', era: 'modern', map_kind: 'china', map_revision: 'china-gs2023-2767', region: '隔离头像降级验收地区', x, y: 35, intro: '仅用于验证单个头像文件失效时的人物资料降级。', works: '', note: '', sources: [], avatar_file_id: file.fileId, avatar_receipt: file.receipt })
   const damaged = await json('/api/map-musicians', { method: 'POST', status: 201, body: avatarRecord('缺失头像验收音乐家 ZX1023', damagedAvatar, 38) })
   const healthy = await json('/api/map-musicians', { method: 'POST', status: 201, body: avatarRecord('可用头像验收音乐家 ZX1023', healthyAvatar, 65) })
   assert.match(damaged.avatar_file_id, /^local:[0-9a-f-]{36}$/)
@@ -427,9 +427,8 @@ try {
   await verifyAvatar(degradedList.find(row => row.id === healthy.id), student, 'liutianhua.png')
   await studentPage.reload()
   await selectMusician(studentPage, degraded)
-  const degradedMarker = studentPage.getByRole('button', { name: `选择${degraded.name}`, exact: true })
-  assert.equal(await degradedMarker.locator('img').count(), 0)
-  await degradedMarker.getByText(degraded.name.slice(0, 1), { exact: true }).waitFor()
+  assert.equal(await card(studentPage).locator('img').count(), 0)
+  await card(studentPage).getByText(degraded.name.slice(0, 1), { exact: true }).waitFor()
   await card(studentPage).getByText(degraded.intro, { exact: true }).waitFor()
   await shot(studentPage, 'student-missing-avatar-fallback.png')
   await api(`/api/map-musicians/${damaged.id}`, { method: 'DELETE' })

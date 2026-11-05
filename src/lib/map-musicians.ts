@@ -5,7 +5,7 @@ import { getTeachingFileUrl } from './teaching-files'
 import { localFileMetadata, localRasterFileType, LocalFileError } from './local-files'
 import { verifyScoreUploadReceipt } from './score-upload-receipt'
 import type { TeachingProfile } from './teaching-types'
-import type { MapKind, MapMusician } from './map-musician-types'
+import { CHINA_MAP_REVISION, type MapKind, type MapMusician } from './map-musician-types'
 
 const fields = z.object({
   name: z.string().trim().min(1, '请填写人物姓名').max(160),
@@ -14,6 +14,7 @@ const fields = z.object({
   region: z.string().trim().min(1, '请填写人物地域').max(500),
   x: z.number().finite().min(0).max(100), y: z.number().finite().min(0).max(100),
   map_kind: z.enum(['china', 'europe']),
+  map_revision: z.literal(CHINA_MAP_REVISION).nullable().optional(),
   intro: z.string().trim().min(1, '请填写人物简介').max(12000),
   works: z.string().trim().max(6000).default(''), note: z.string().trim().max(6000).default(''),
   sources: z.array(z.object({ title: z.string().trim().min(1).max(160), url: z.string().trim().max(2048).url().refine(url => /^https?:\/\//i.test(url), '来源链接须使用 HTTP(S)') })).max(20).default([]),
@@ -21,20 +22,22 @@ const fields = z.object({
   avatar_receipt: z.string().trim().min(1).max(10000).optional(),
   avatar: z.never().optional(),
 })
-export const mapMusicianSchema = fields.refine(value => (value.map_kind === 'china' ? CHINA_ERAS : EUROPE_ERAS).some(era => era.id === value.era), '所选时期与地图不匹配')
+export const mapMusicianSchema = fields
+  .refine(value => (value.map_kind === 'china' ? CHINA_ERAS : EUROPE_ERAS).some(era => era.id === value.era), '所选时期与地图不匹配')
+  .refine(value => !value.map_revision || value.map_kind === 'china', '点位版本与地图不匹配')
 export const mapMusicianPatchSchema = fields.partial().extend({
   years: fields.shape.years.unwrap().optional(), works: fields.shape.works.unwrap().optional(),
   note: fields.shape.note.unwrap().optional(), sources: fields.shape.sources.unwrap().optional(),
   avatar_file_id: fields.shape.avatar_file_id.unwrap().optional(),
 })
 
-export type MapMusicianRow = Omit<Composer, 'avatar'> & { map_kind: MapKind; teacher_id: string; avatar_file_id: string | null }
-const builtin = (composer: Composer, mapKind: MapKind): MapMusician => ({ ...composer, origin: 'builtin', map_kind: mapKind, teacher_id: null, avatar_file_id: null })
+export type MapMusicianRow = Omit<MapMusician, 'avatar' | 'origin'>
+const builtin = (composer: Composer, mapKind: MapKind): MapMusician => ({ ...composer, origin: 'builtin', map_kind: mapKind, map_revision: mapKind === 'china' ? CHINA_MAP_REVISION : null, teacher_id: null, avatar_file_id: null })
 export function builtinMapMusicians(): MapMusician[] {
   return [...CHINA_COMPOSERS.map(composer => builtin(composer, 'china')), ...EUROPE_COMPOSERS.map(composer => builtin(composer, 'europe'))]
 }
 export function customMapMusician(row: MapMusicianRow, avatar = ''): MapMusician {
-  return { id: row.id, name: row.name, years: row.years, era: row.era, region: row.region, x: row.x, y: row.y, intro: row.intro, works: row.works, note: row.note, sources: row.sources, avatar, origin: 'custom', map_kind: row.map_kind, teacher_id: row.teacher_id, avatar_file_id: row.avatar_file_id }
+  return { id: row.id, name: row.name, years: row.years, era: row.era, region: row.region, x: row.x, y: row.y, intro: row.intro, works: row.works, note: row.note, sources: row.sources, avatar, origin: 'custom', map_kind: row.map_kind, map_revision: row.map_revision ?? null, teacher_id: row.teacher_id, avatar_file_id: row.avatar_file_id }
 }
 export async function allMapMusicians(supabase: TeachingClient, mapKind?: MapKind): Promise<MapMusician[]> {
   const rows: MapMusicianRow[] = []

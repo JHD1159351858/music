@@ -78,6 +78,13 @@
       "when": 1793266204060,
       "tag": "0010_score_covers",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793873742265,
+      "tag": "0011_map_musician_revision",
+      "breakpoints": true
     }
   ]
 }

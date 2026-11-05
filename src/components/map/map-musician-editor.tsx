@@ -4,7 +4,7 @@ import { useRef, useState, type FormEvent } from 'react'
 import { Loader2, Plus, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { CHINA_ERAS, EUROPE_ERAS } from '@/lib/composers'
-import type { MapKind, MapMusician, MapMusicianInput } from '@/lib/map-musician-types'
+import { CHINA_MAP_REVISION, type MapKind, type MapMusician, type MapMusicianInput } from '@/lib/map-musician-types'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -80,7 +80,7 @@ export function MapMusicianEditor({ musician, userId, mapKind, era, point, initi
     try {
       const saved = await responseJson<MapMusician & { warning?: string }>(await fetch(musician ? `/api/map-musicians/${encodeURIComponent(musician.id)}` : '/api/map-musicians', {
         method: musician ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...values, sources, x: point.x, y: point.y, map_kind: mapKind }),
+        body: JSON.stringify({ ...values, sources, x: point.x, y: point.y, map_kind: mapKind, map_revision: mapKind === 'china' ? CHINA_MAP_REVISION : null }),
       }))
       if (saved.warning) toast.warning(saved.warning)
       else toast.success(musician ? '音乐家资料已保存' : '音乐家已添加')

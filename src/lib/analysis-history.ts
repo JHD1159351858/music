@@ -3,6 +3,7 @@ import type { AnalysisResult } from './score-analysis'
 import type { AnalysisHistoryItem, AnalysisHistoryPage } from './analysis-history-types'
 import { createScoreAnalysisReceipt } from './score-analysis-receipt'
 import { ApiError, dbCheck, type TeachingClient } from './teaching-server'
+import type { ScoreGuide } from './score-guide'
 
 type SummaryRow = Omit<AnalysisHistoryItem, 'fileName' | 'noteCount' | 'createdAt'> & {
   file_name: string | null
@@ -52,4 +53,12 @@ export async function getAnalysisHistoryResult(client: TeachingClient, ownerId: 
   const result = { ...snapshot as AnalysisResult, historyId: found.data.id as string }
   delete result.analysisReceipt
   return result.music21 ? { ...result, analysisReceipt: createScoreAnalysisReceipt({ ...result }, ownerId) } : result
+}
+
+export async function saveHistoryGuide(client: TeachingClient, ownerId: string, current: AnalysisResult & { historyId: string }, scoreGuide: ScoreGuide) {
+  const { historyId, ...snapshot } = current
+  delete snapshot.analysisReceipt
+  const updated = await client.from('score_analyses')
+    .update({ result: { ...snapshot, scoreGuide } }).eq('user_id', ownerId).eq('id', historyId)
+  dbCheck(updated.error)
 }

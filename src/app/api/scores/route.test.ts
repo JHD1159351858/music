@@ -339,7 +339,6 @@ test('all score pages enforce uploader ownership, actual MIME and image/PDF limi
   const spoofedPdf = await pageFile(student, 'application/pdf')
   assert.equal((await createScore(await request('/api/scores', student, scoreBody([own, foreign])))).status, 403)
   assert.equal((await createScore(await request('/api/scores', student, scoreBody([own, spoofedPdf])))).status, 400)
-  assert.equal((await createScore(await request('/api/scores', student, scoreBody(Array.from({ length: 51 }, () => own))))).status, 400)
   assert.equal((await createScore(await request('/api/scores', student, scoreBody([spoofedPdf])))).status, 400)
   const pdf = await pageFile(teacher, 'application/pdf')
   const teacherBody = { ...scoreBody([pdf]), user_id: teacher }
@@ -349,6 +348,29 @@ test('all score pages enforce uploader ownership, actual MIME and image/PDF limi
   assert.equal(score.file_type, 'application/pdf')
   assert.equal(score.pages?.[0].file_type, 'application/pdf')
   assert.equal((await createScore(await request('/api/scores', teacher, { ...teacherBody, pages: [pdf, await pageFile(teacher)] }))).status, 400)
+})
+
+test('score creation and editing accept 150 pages and reject 151', async () => {
+  createLocalDatabaseClient()
+  const page = await pageFile(student)
+  const pages = Array.from({ length: 150 }, (_, index) => ({ ...page, file_name: `琴谱第 ${index + 1} 页.png` }))
+  const created = await createScore(await request('/api/scores', student, scoreBody(pages)))
+  assert.equal(created.status, 201, await created.clone().text())
+  const saved = await created.json() as TeachingScore
+  assert.deepEqual(saved.pages?.map(item => item.file_name), pages.map(item => item.file_name))
+
+  const reordered = [...pages].reverse()
+  const updated = await editScore(await request(`/api/scores/${saved.id}`, student, { user_id: student, pages: reordered }), context(saved.id))
+  assert.equal(updated.status, 200, await updated.clone().text())
+  assert.deepEqual((await updated.json() as TeachingScore).pages?.map(item => item.file_name), reordered.map(item => item.file_name))
+
+  const tooMany = [...pages, page]
+  const rejectedCreate = await createScore(await request('/api/scores', student, scoreBody(tooMany)))
+  assert.equal(rejectedCreate.status, 400)
+  assert.match(await rejectedCreate.text(), /150 页/)
+  const rejectedEdit = await editScore(await request(`/api/scores/${saved.id}`, student, { user_id: student, pages: tooMany }), context(saved.id))
+  assert.equal(rejectedEdit.status, 400)
+  assert.match(await rejectedEdit.text(), /150 页/)
 })
 
 test('second page downloads and URL renewal obey score publication and class scope', async () => {

@@ -10,7 +10,7 @@ import { AUTH_SESSION_COOKIE, signAuthToken } from '@/lib/auth-session'
 import { CHINA_COMPOSERS, EUROPE_COMPOSERS } from '@/lib/composers'
 import { createLocalDatabaseClient } from '@/lib/local-database'
 import { deleteLocalFile, getLocalFileUrl, localFileMetadata, saveLocalFile } from '@/lib/local-files'
-import type { MapMusician } from '@/lib/map-musician-types'
+import { CHINA_MAP_REVISION, type MapMusician } from '@/lib/map-musician-types'
 import { validateMapAvatar } from '@/lib/map-musicians'
 import { createScoreUploadReceipt } from '@/lib/score-upload-receipt'
 import { createSupabaseServer } from '@/lib/supabase-server'
@@ -48,7 +48,7 @@ async function request(url: string, userId?: string, body?: Record<string, unkno
   return new Request(`http://localhost${url}`, { method, headers, body: body ? JSON.stringify(body) : undefined })
 }
 const context = (id: string) => ({ params: Promise.resolve({ id }) })
-const draft = () => ({ name: '教师补充音乐家', years: '', era: 'modern', region: '上海', x: 62.5, y: 50, map_kind: 'china', intro: '仅用于验证的教师资料', works: '', note: '', sources: [], avatar_file_id: null })
+const draft = () => ({ name: '教师补充音乐家', years: '', era: 'modern', region: '上海', x: 62.5, y: 50, map_kind: 'china', map_revision: CHINA_MAP_REVISION, intro: '仅用于验证的教师资料', works: '', note: '', sources: [], avatar_file_id: null })
 async function create(body: Record<string, unknown> = draft()) {
   const response = await POST(await request('/api/map-musicians', teacher, body))
   assert.equal(response.status, 201, await response.clone().text())
@@ -109,12 +109,41 @@ test('writes require the creating teacher, builtins remain readonly and partial 
   assert.equal(rows.some(row => row.id === entry.id), false)
 })
 
+test('legacy China points retain their data until the owning teacher selects a point on the standard map', async () => {
+  const revision = CHINA_MAP_REVISION
+  const inserted = await createLocalDatabaseClient().from('map_musicians')
+    .insert({ ...draft(), map_revision: null, teacher_id: teacher }).select('id').single()
+  assert.equal(inserted.error, null)
+  assert.ok(inserted.data && !Array.isArray(inserted.data))
+  const id = inserted.data.id
+  assert.ok(typeof id === 'string')
+  const url = `/api/map-musicians/${id}`
+  const update = async (fields: Record<string, unknown>) => PATCH(await request(url, teacher, fields, 'PATCH'), context(id))
+  assert.equal((await update({ map_revision: revision })).status, 400)
+  const renamed = await update({ name: '保留旧底图的人物资料' })
+  assert.equal((await renamed.json() as MapMusician).map_revision, null)
+  const moved = await update({ x: 72, y: 63, map_revision: revision })
+  assert.equal(moved.status, 200, await moved.clone().text())
+  const rows = await (await GET(await request('/api/map-musicians?map_kind=china', student))).json() as MapMusician[]
+  const point = rows.find(row => row.id === id)
+  assert.deepEqual({ x: point?.x, y: point?.y, revision: point?.map_revision }, { x: 72, y: 63, revision })
+  assert.ok(rows.filter(row => row.origin === 'builtin').every(row => row.map_revision === revision))
+})
+
+test('new Chinese locations and later coordinate changes require the current map revision', async () => {
+  assert.equal((await POST(await request('/api/map-musicians', teacher, { ...draft(), map_revision: null }))).status, 400)
+  const entry = await create()
+  assert.equal(entry.map_revision, CHINA_MAP_REVISION)
+  const url = `/api/map-musicians/${entry.id}`
+  assert.equal((await PATCH(await request(url, teacher, { x: 30, y: 40, map_revision: null }, 'PATCH'), context(entry.id))).status, 400)
+})
+
 test('invalid map kind, era, required fields, point ranges and unsafe sources or avatar URLs are rejected', async () => {
   for (const fields of [{ name: ' ' }, { region: '' }, { intro: '' }, { map_kind: 'other' }, { era: 'romantic' }, { x: -1 }, { y: 101 }, { x: '30' }, { sources: [{ title: '来源', url: 'javascript:alert(1)' }] }, { sources: [{ title: '', url: 'https://example.org' }] }, { avatar: 'https://example.org/avatar.png' }]) {
     const response = await POST(await request('/api/map-musicians', teacher, { ...draft(), ...fields }))
     assert.equal(response.status, 400, JSON.stringify(fields))
   }
-  const minimal = { name: '最少资料', region: '北京', intro: '只保留教师输入', era: 'modern', map_kind: 'china', x: 50, y: 50 }
+  const minimal = { name: '最少资料', region: '北京', intro: '只保留教师输入', era: 'modern', map_kind: 'china', map_revision: CHINA_MAP_REVISION, x: 50, y: 50 }
   const saved = await create(minimal)
   for (const field of ['years', 'works', 'note', 'avatar'] as const) assert.equal(saved[field], '')
   assert.deepEqual(saved.sources, [])

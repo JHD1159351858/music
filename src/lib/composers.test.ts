@@ -21,12 +21,12 @@ test('China eras all contain a profile and Europe eras include sourced Chinese c
 })
 
 test('representative locations fall in their regions on the complete map images', () => {
-  // Bounds are read from the full 1024×512 artwork, not the former square crop.
+  // China bounds refer to the complete GS(2023)2767 sheet. Europe uses its own illustration.
   const regions = [
-    { id: 'boji', label: '武汉／湖北', bounds: [50, 55, 46, 52] },
-    { id: 'liutianhua', label: '北平任教地', bounds: [55, 61, 28, 38] },
-    { id: 'xianxinghai', label: '广州／广东', bounds: [50, 55, 56, 63] },
-    { id: 'nieer', label: '昆明／云南', bounds: [39, 46, 54, 62] },
+    { id: 'boji', label: '武汉／湖北', bounds: [60, 63, 62, 66] },
+    { id: 'liutianhua', label: '北平任教地', bounds: [63, 65, 38, 42] },
+    { id: 'xianxinghai', label: '广州／广东', bounds: [59, 63, 83, 88] },
+    { id: 'nieer', label: '昆明／云南', bounds: [43, 48, 76, 82] },
     { id: 'bach', label: '德国', bounds: [40, 48, 52, 65] },
     { id: 'mozart', label: '奥地利', bounds: [41, 50, 66, 73] },
     { id: 'beethoven', label: '波恩／德国', bounds: [37, 43, 56, 65] },

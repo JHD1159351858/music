@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ChatPanel } from '@/components/chat-panel'
 import { AnalysisHistoryPanel } from '@/components/analysis/history-panel'
+import { ScoreGuidePanel } from '@/components/analysis/score-guide-panel'
 import type { AnalysisResult } from '@/lib/score-analysis'
 import {
   BarChart,
@@ -443,12 +444,7 @@ function AnalysisWorkspace({ isStudent }: { isStudent: boolean }) {
               </div> : <p className="py-8 text-center text-sm text-muted-foreground">未识别，暂无可靠统计数据</p>}
             </div>
 
-            <section className="rounded-xl border border-border bg-card p-5">
-              <h3 className="mb-4 font-serif text-lg font-semibold">乐曲导读</h3>
-              <p className="mb-4 text-xs text-muted-foreground">以下内容来自已收录课程资料。未收录的项目显示未识别，可向教师补充询问。</p>
-              <dl className="space-y-4">{[['作品背景', result.workBackground], ['作曲家背景', result.composerBackground], ['创作年代', result.creationYear], ['所属时期', result.period], ['乐曲曲调', result.melody]].map(([label, value]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">{value ?? '未识别（课程资料未收录）'}</dd></div>)}</dl>
-              {!!result.sources?.length && <div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground"><span>课程资料来源：</span>{result.sources.map((source, index) => <span key={`${source.title}-${index}`} className="mr-2">{source.url && /^https?:\/\//i.test(source.url) ? <a href={source.url} target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-4 hover:underline">{source.title}</a> : source.title}</span>)}</div>}
-            </section>
+            <ScoreGuidePanel key={resultSession} result={result} />
           </div>
 
           {/* 右侧：对话窗口 */}

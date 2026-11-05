@@ -3,10 +3,11 @@ import { LLMClient, Config, type Message } from 'coder-coding-dev-sdk'
 import { z } from 'zod'
 import { actor, apiRoute, ApiError, readJson } from '@/lib/teaching-server'
 import { normalizeImageAnalysis, parseNotation, type AnalysisResult } from '@/lib/score-analysis'
-import { retrieveKnowledge } from '@/lib/course-knowledge'
+import { retrieveKnowledge, type CourseKnowledge } from '@/lib/course-knowledge'
 import { analyzeMusicXml, readMusicXmlUpload } from '@/lib/music21-analysis'
 import { createScoreAnalysisReceipt } from '@/lib/score-analysis-receipt'
 import { saveAnalysisHistory } from '@/lib/analysis-history'
+import { baselineScoreGuide, type GuideField, type GuideSource } from '@/lib/score-guide'
 
 const inputSchema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('image'), image: z.string().max(12 * 1024 * 1024).regex(/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=\r\n]+$/, '请上传 PNG、JPG 或 WebP 图片'), fileName: z.string().max(255).optional() }),
@@ -47,15 +48,29 @@ export async function POST(request: Request) {
     const entries = await retrieveKnowledge(`${result.title ?? ''} ${result.composer ?? ''}`)
     const sourceText = entries.map(entry => `${entry.title}\n${entry.content}`).join('\n\n')
     const workEntries = entries.filter(entry => result.title && (entry.title === result.title || entry.keywords.includes(result.title)))
-    const workText = workEntries.map(entry => entry.content).join('\n')
-    const field = (label: string) => workText.match(new RegExp(`(?:${label})[：:]([^\\n；;]+)`))?.[1]?.trim() ?? null
+    const toSource = (entry: CourseKnowledge): GuideSource => ({ title: entry.title, url: entry.source_url })
+    const guideSources: Partial<Record<GuideField, GuideSource>> = {}
+    const field = (key: GuideField, label: string) => {
+      const pattern = new RegExp(`(?:${label})[：:]([^\\n；;]+)`)
+      for (const entry of workEntries) {
+        const text = entry.content.match(pattern)?.[1]?.trim()
+        if (!text) continue
+        guideSources[key] = toSource(entry)
+        return text
+      }
+      return null
+    }
     result.workBackground = workEntries[0]?.content ?? null
-    result.composerBackground = entries.find(entry => result.composer && (entry.title === result.composer || entry.keywords.includes(result.composer)))?.content ?? null
-    result.creationYear = field('创作年代|创作时间')
-    result.period = field('所属时期|音乐时期')
-    result.melody = field('乐曲曲调|曲调特点|旋律特点')
+    if (workEntries[0]) guideSources.workBackground = toSource(workEntries[0])
+    const composerEntry = entries.find(entry => result.composer && entry.title === result.composer)
+      ?? entries.find(entry => result.composer && entry.keywords.includes(result.composer) && !workEntries.includes(entry))
+    result.composerBackground = composerEntry?.content ?? null
+    if (composerEntry) guideSources.composerBackground = toSource(composerEntry)
+    result.creationYear = field('creationYear', '创作年代|创作时间')
+    result.period = field('period', '所属时期|音乐时期')
+    result.melody = field('melody', '乐曲曲调|曲调特点|旋律特点')
     result.background = sourceText || null
-    const response = { ...result, sources: entries.map(entry => ({ title: entry.title, url: entry.source_url })) }
+    const response = { ...result, sources: entries.map(toSource), scoreGuide: baselineScoreGuide(result, guideSources) }
     const historyId = await saveAnalysisHistory(supabase, user.id, response)
     const saved = { ...response, historyId }
     return NextResponse.json({ ...saved, ...(result.music21 ? { analysisReceipt: createScoreAnalysisReceipt(saved, user.id) } : {}) })

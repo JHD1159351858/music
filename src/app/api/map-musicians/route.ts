@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { actor, apiRoute, ApiError, dbCheck, readJson, teacher } from '@/lib/teaching-server'
 import { allMapMusicians, customMapMusician, mapMusicianSchema, validateMapAvatar, type MapMusicianRow } from '@/lib/map-musicians'
 import { getTeachingFileUrl } from '@/lib/teaching-files'
+import { CHINA_MAP_REVISION } from '@/lib/map-musician-types'
 
 export async function GET(request: Request) {
   return apiRoute(async () => {
@@ -17,6 +18,9 @@ export async function POST(request: Request) {
     const { user, supabase } = await actor(request, raw)
     teacher(user)
     const body = mapMusicianSchema.parse(raw)
+    if (body.map_kind === 'china' && body.map_revision !== CHINA_MAP_REVISION) {
+      throw new ApiError('请在当前标准地图上选择点位')
+    }
     await validateMapAvatar(supabase, user, body.avatar_file_id, body.avatar_receipt)
     const avatar = body.avatar_file_id ? (await getTeachingFileUrl(body.avatar_file_id)).url : ''
     const values = { ...body }

@@ -77,6 +77,7 @@ async function context(viewport, mobile = false) {
   return result
 }
 function map(target, kind = '中国') { return target.getByRole('region', { name: `${kind}音乐史地图`, exact: true }) }
+function picture(target, kind) { return map(target, kind).getByRole('img', { name: kind === '中国' ? '中国标准地图' : '欧洲地图', exact: true }) }
 function canvas(target) { return target.getByLabel('音乐史地图画布', { exact: true }) }
 function scaleOutput(target) { return target.getByLabel('地图缩放比例', { exact: true }) }
 async function scale(target) { return Number.parseFloat(await scaleOutput(target).textContent()) }
@@ -88,12 +89,13 @@ async function reset(target) {
   await waitScale(target, 100)
 }
 async function fullImage(target, kind, viewport) {
-  const image = map(target, kind).getByRole('img', { name: `${kind}地图`, exact: true })
+  const image = picture(target, kind)
   await image.evaluate(element => element.decode())
   const imageBox = await image.boundingBox()
   const canvasBox = await canvas(target).boundingBox()
   assert.ok(imageBox && canvasBox)
-  assert.ok(Math.abs(imageBox.width / imageBox.height - 2) < 0.01, `${viewport}px ${kind}: image must preserve the original 2:1 ratio`)
+  const ratio = kind === '中国' ? 1256 / 885 : 2
+  assert.ok(Math.abs(imageBox.width / imageBox.height - ratio) < 0.01, `${viewport}px ${kind}: image must preserve the original ratio`)
   assert.ok(imageBox.x >= canvasBox.x - 1 && imageBox.y >= canvasBox.y - 1 && imageBox.x + imageBox.width <= canvasBox.x + canvasBox.width + 1 && imageBox.y + imageBox.height <= canvasBox.y + canvasBox.height + 1, `${viewport}px ${kind}: all image boundaries must fit in the canvas`)
   assert.equal(await scale(target), 100)
   evidence.measurements.push({ viewport, kind, scale: 100, image: imageBox, canvas: canvasBox })
@@ -103,7 +105,7 @@ async function noOverflow(target) {
   assert.ok(dimensions.content <= dimensions.width, `Horizontal overflow: ${JSON.stringify(dimensions)}`)
 }
 async function positions(target, name, kind = '中国') {
-  const image = await map(target, kind).getByRole('img', { name: `${kind}地图`, exact: true }).boundingBox()
+  const image = await picture(target, kind).boundingBox()
   const button = map(target, kind).getByRole('button', { name: `选择${name}`, exact: true })
   const avatar = button.locator('img').first()
   if (await avatar.count()) await avatar.evaluate(element => element.decode())
@@ -146,12 +148,17 @@ try {
   await fullImage(page, '中国', 1440)
   await noOverflow(page)
   await shot(page, 'china-complete-desktop.png')
-  pass('desktop China initially shows the complete original 2:1 image within the canvas')
+  pass('desktop China initially shows the complete approved map within the canvas')
 
+  const portrait = map(page).getByRole('button', { name: '选择刘天华', exact: true }).locator('img')
+  await portrait.evaluate(image => image.decode())
+  const portraitSize = await portrait.boundingBox()
   const initialPositions = await matchesApiPosition(page, '刘天华', '中国', 'desktop initial')
   await page.getByRole('button', { name: '放大地图', exact: true }).click()
   await waitScale(page, 125)
   const enlargedPositions = await positions(page, '刘天华')
+  const enlargedPortrait = await portrait.boundingBox()
+  assert.ok(portraitSize && enlargedPortrait && Math.abs(enlargedPortrait.width - portraitSize.width) < 1, 'A portrait should keep its screen size while the map zooms')
   synchronized(initialPositions, enlargedPositions, 'Button zoom')
   await matchesApiPosition(page, '刘天华', '中国', 'desktop button zoom', enlargedPositions)
   assert.ok(enlargedPositions.image.width > initialPositions.image.width)
@@ -198,7 +205,7 @@ try {
   const beforeEra = await positions(page, '刘天华')
   await page.getByRole('navigation', { name: '音乐史时代', exact: true }).getByRole('button', { name: /明清/ }).click()
   await waitScale(page, 244)
-  const afterEraImage = await map(page).getByRole('img', { name: '中国地图', exact: true }).boundingBox()
+  const afterEraImage = await picture(page, '中国').boundingBox()
   assert.ok(afterEraImage)
   assert.ok(Math.abs(beforeEra.image.x - afterEraImage.x) < 1 && Math.abs(beforeEra.image.y - afterEraImage.y) < 1 && Math.abs(beforeEra.image.width - afterEraImage.width) < 1, 'Era changes must preserve zoom and pan')
   await matchesApiPosition(page, '朱载堉', '中国', 'desktop initial-letter marker after era switch')

@@ -1,5 +1,6 @@
 import { XMLParser, XMLValidator } from 'fast-xml-parser'
 import { z } from 'zod'
+import type { ScoreGuide } from './score-guide'
 
 export interface PitchPoint { index: number; midi: number; note: string }
 export interface Music21Details {
@@ -22,6 +23,7 @@ export interface AnalysisResult {
   sources?: Array<{ title: string; url: string | null }>
   fileName?: string
   historyId?: string
+  scoreGuide?: ScoreGuide
 }
 const pitchSchema = z.object({ step: z.enum(['C', 'D', 'E', 'F', 'G', 'A', 'B']), octave: z.number().int().min(-1).max(9), alter: z.number().int().min(-2).max(2).default(0) })
 type Pitch = z.infer<typeof pitchSchema>

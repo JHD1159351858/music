@@ -165,6 +165,8 @@ function openDatabase(file: string): DatabaseSync {
     if (!scoreColumns.some(column => column.name === 'period')) db.exec('ALTER TABLE scores ADD COLUMN period TEXT')
     if (!scoreColumns.some(column => column.name === 'target_classes')) db.exec("ALTER TABLE scores ADD COLUMN target_classes TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(target_classes))")
     if (!scoreColumns.some(column => column.name === 'pages')) db.exec("ALTER TABLE scores ADD COLUMN pages TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(pages))")
+    const mapMusicianColumns = db.prepare('PRAGMA table_info(map_musicians)').all()
+    if (!mapMusicianColumns.some(column => column.name === 'map_revision')) db.exec('ALTER TABLE map_musicians ADD COLUMN map_revision TEXT')
     const postColumns = db.prepare('PRAGMA table_info(posts)').all()
     if (!postColumns.some(column => column.name === 'recipient_teacher_id')) db.exec('ALTER TABLE posts ADD COLUMN recipient_teacher_id TEXT REFERENCES profiles(id) ON DELETE RESTRICT')
     const seed = db.prepare('INSERT INTO profiles (id,nickname,role) VALUES (?,?,?) ON CONFLICT(id) DO NOTHING')

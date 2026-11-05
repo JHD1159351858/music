@@ -1,0 +1,1 @@
+ALTER TABLE "map_musicians" ADD COLUMN "map_revision" text;

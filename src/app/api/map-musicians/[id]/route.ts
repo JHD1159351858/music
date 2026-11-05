@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { actor, apiRoute, ApiError, dbCheck, readJson, teacher } from '@/lib/teaching-server'
 import { customMapMusician, mapMusicianPatchSchema, mapMusicianSchema, validateMapAvatar, type MapMusicianRow } from '@/lib/map-musicians'
 import { getTeachingFileUrl, removeUnusedTeachingFile } from '@/lib/teaching-files'
+import { CHINA_MAP_REVISION } from '@/lib/map-musician-types'
 
 type Context = { params: Promise<{ id: string }> }
 async function cleanup(supabase: Parameters<typeof removeUnusedTeachingFile>[0], fileId: string | null): Promise<string | undefined> {
@@ -20,6 +21,11 @@ export async function PATCH(request: Request, context: Context) {
     if (!existing.data) throw new ApiError('人物不存在或没有修改权限', 404)
     const patch = mapMusicianPatchSchema.parse(raw)
     const merged = mapMusicianSchema.parse({ ...existing.data, ...patch })
+    const changesPosition = patch.x !== undefined || patch.y !== undefined || patch.map_revision !== undefined || merged.map_kind !== existing.data.map_kind
+    if (merged.map_kind === 'china' && changesPosition &&
+      (patch.map_revision !== CHINA_MAP_REVISION || patch.x === undefined || patch.y === undefined)) {
+      throw new ApiError('请在当前标准地图上重新选点')
+    }
     await validateMapAvatar(supabase, user, merged.avatar_file_id, patch.avatar_receipt)
     const avatar = merged.avatar_file_id ? (await getTeachingFileUrl(merged.avatar_file_id)).url : ''
     const values = { ...patch }

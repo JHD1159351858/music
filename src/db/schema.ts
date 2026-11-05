@@ -211,6 +211,7 @@ export const mapMusicians = pgTable('map_musicians', {
   era: text('era').notNull(), region: text('region').notNull(), intro: text('intro').notNull(),
   works: text('works').default('').notNull(), note: text('note').default('').notNull(),
   x: doublePrecision('x').notNull(), y: doublePrecision('y').notNull(), map_kind: text('map_kind').notNull(),
+  map_revision: text('map_revision'),
   sources: jsonb('sources').$type<HistorySource[]>().default([]).notNull(), avatar_file_id: text('avatar_file_id'),
   teacher_id: varchar('teacher_id', { length: 36 }).notNull().references(() => profiles.id, { onDelete: 'cascade' }),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { SubmissionRequirements } from './teaching-types'
 import { SCORE_PERIOD_MAX_LENGTH, SCORE_TYPES } from './score-classification'
+import { MAX_SCORE_PAGES } from './score-pages'
 
 const id = z.string().trim().min(1).max(100)
 const text = z.string().trim().min(1).max(200)
@@ -23,7 +24,7 @@ export const scoreSchema = userIdSchema.extend({
   file_id: nullableText, file_name: nullableText, file_type: nullableText,
   cover_file_id: z.string().trim().min(1).max(5000).nullable().optional(),
   cover_receipt: z.string().trim().min(1).max(10000).nullable().optional(),
-  pages: z.array(scorePageSchema).max(50, '每份琴谱最多上传 50 页').optional(),
+  pages: z.array(scorePageSchema).max(MAX_SCORE_PAGES, `每份琴谱最多上传 ${MAX_SCORE_PAGES} 页`).optional(),
   published: z.boolean().default(false),
   target_classes: z.array(text).max(100).default([]),
 })

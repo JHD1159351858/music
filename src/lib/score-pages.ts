@@ -1,5 +1,7 @@
 import type { ScorePage } from './teaching-types'
 
+export const MAX_SCORE_PAGES = 150
+
 export interface ScoreFiles {
   image_url?: string | null
   file_id?: string | null

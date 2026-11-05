@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, FileMusic, Loader2, Maximize, MicOff, Minimize, Pause, Play, RotateCcw, Sparkles, Square, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { toast } from 'sonner'
@@ -11,10 +11,10 @@ import { Button } from '@/components/ui/button'
 import { ChatPanel } from '@/components/chat-panel'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { savePracticeDraft, type PracticeSaveDraft } from '@/components/practice/practice-save'
-import { ScoreViewport } from '@/components/practice/score-viewport'
+import { ScoreViewport, type ScoreViewportPage } from '@/components/practice/score-viewport'
 import { ScorePageNavigation } from '@/components/practice/score-page-navigation'
 import { ScoreCover } from '@/components/practice/score-cover'
-import { INITIAL_SCORE_VIEW, MAX_SCORE_ZOOM, MIN_SCORE_ZOOM, zoomScoreAt } from '@/components/practice/score-viewport-math'
+import { getScoreSpread, INITIAL_SCORE_VIEW, MAX_SCORE_ZOOM, MIN_SCORE_ZOOM, zoomScoreAt, type ScoreSpreadSize, type ScoreView } from '@/components/practice/score-viewport-math'
 
 type MicStatus = 'preparing' | 'recording' | 'denied' | 'stopped'
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -46,7 +46,9 @@ function PracticeSession() {
   const [ended, setEnded] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [scoreView, setScoreView] = useState(INITIAL_SCORE_VIEW)
+  const [rightScoreView, setRightScoreView] = useState(INITIAL_SCORE_VIEW)
   const [pageIndex, setPageIndex] = useState(0)
+  const [spreadSize, setSpreadSize] = useState<ScoreSpreadSize>(1)
   const [scoreFocused, setScoreFocused] = useState(false)
   const [assistantOpen, setAssistantOpen] = useState(false)
   const [leaveOpen, setLeaveOpen] = useState(false)
@@ -60,18 +62,29 @@ function PracticeSession() {
   const clockRef = useRef({ startedAt: '', runningSince: 0, accumulatedMs: 0, recordId: '' })
   const saveDraftRef = useRef<PracticeSaveDraft>({ audioBlob: null, audioUrl: null, audioFileId: null, recordId: null })
   const cancelMicRequest = useCallback(() => { micGenerationRef.current += 1 }, [])
+  const resetScoreViews = useCallback(() => {
+    setScoreView(INITIAL_SCORE_VIEW)
+    setRightScoreView(INITIAL_SCORE_VIEW)
+  }, [])
+
+  const pages = score ? getScorePages(score) : []
+  const page = pages[pageIndex] ?? pages[0]
+  const pdf = page?.file_type === 'application/pdf' || /\.pdf(?:\?|$)/i.test(page?.file_name ?? page?.image_url ?? '')
+  const size = pdf ? 1 : spreadSize
+  const { start, end, previous, next } = getScoreSpread(pageIndex, pages.length, size)
+  const doubleView = end - start === 2 && Boolean(pages[start]?.image_url && pages[start + 1]?.image_url)
 
   useEffect(() => {
     if (!user) return
     const controller = new AbortController()
     fetch(`/api/scores/${id}?user_id=${user.id}`, { signal: controller.signal })
       .then((res) => jsonResponse<Score>(res))
-      .then((loaded) => { setScore(loaded); setPageIndex(0); setScoreView(INITIAL_SCORE_VIEW) })
+      .then((loaded) => { setScore(loaded); setPageIndex(0); resetScoreViews() })
       .catch((cause: unknown) => {
         if (!controller.signal.aborted) setLoadError(cause instanceof Error ? cause.message : '琴谱加载失败')
       })
     return () => controller.abort()
-  }, [id, user])
+  }, [id, user, resetScoreViews])
 
   const startMic = useCallback(async () => {
     if (endedRef.current) return
@@ -128,11 +141,11 @@ function PracticeSession() {
     const exit = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       setScoreFocused(false)
-      setScoreView(INITIAL_SCORE_VIEW)
+      if (!doubleView) resetScoreViews()
     }
     document.addEventListener('keydown', exit)
     return () => document.removeEventListener('keydown', exit)
-  }, [scoreFocused])
+  }, [scoreFocused, doubleView, resetScoreViews])
 
   const togglePause = () => {
     if (endedRef.current) return
@@ -206,7 +219,7 @@ function PracticeSession() {
 
   const toggleScoreFocus = () => {
     setScoreFocused((focused) => !focused)
-    setScoreView(INITIAL_SCORE_VIEW)
+    if (!doubleView) resetScoreViews()
     setAssistantOpen(false)
   }
 
@@ -218,15 +231,32 @@ function PracticeSession() {
     router.replace(taskId ? `/tasks/${encodeURIComponent(taskId)}` : '/practice')
   }
 
-  const pages = score ? getScorePages(score) : []
-  const page = pages[pageIndex] ?? pages[0]
-  const pdf = page?.file_type === 'application/pdf' || /\.pdf(?:\?|$)/i.test(page?.file_name ?? page?.image_url ?? '')
-  const changePage = (index: number) => { setPageIndex(index); setScoreView(INITIAL_SCORE_VIEW) }
+  const changePage = useCallback((index: number) => { setPageIndex(index); resetScoreViews() }, [resetScoreViews])
+  const spreadPages = (from: number | null, to: number): ScoreViewportPage[] => from === null ? [] : pages.slice(from, to).flatMap((item, offset) => item.image_url ? [{
+    src: item.image_url,
+    alt: `${score?.title}${pages.length > 1 ? `第 ${from + offset + 1} 页` : ''}完整琴谱`,
+  }] : [])
   const time = `${pad(Math.floor(elapsed / 3600))}:${pad(Math.floor((elapsed % 3600) / 60))}:${pad(elapsed % 60)}`
 
   if (loadError) return <div className="space-y-4 py-16 text-center"><p role="alert" className="text-destructive">{loadError}</p><Button onClick={() => router.replace('/practice')}>返回琴谱库</Button></div>
 
-  const zoomControls = <div className="flex items-center gap-1 rounded-lg border border-border px-1"><Button variant="ghost" size="icon" aria-label="缩小谱面" onClick={() => setScoreView(view => zoomScoreAt(view, view.zoom - 0.25, { x: 0, y: 0 }))} disabled={scoreView.zoom <= MIN_SCORE_ZOOM}><ZoomOut className="h-4 w-4" /></Button><button onClick={() => setScoreView(INITIAL_SCORE_VIEW)} className="flex min-w-20 flex-col items-center px-1 py-1 text-xs text-muted-foreground" title="完整显示曲谱并居中"><span>适应屏幕</span><span className="font-mono text-[10px] tabular-nums">{Math.round(scoreView.zoom * 100)}%</span></button><Button variant="ghost" size="icon" aria-label="放大谱面" onClick={() => setScoreView(view => zoomScoreAt(view, view.zoom + 0.25, { x: 0, y: 0 }))} disabled={scoreView.zoom >= MAX_SCORE_ZOOM}><ZoomIn className="h-4 w-4" /></Button></div>
+  const zoomControls = (view: ScoreView, setView: Dispatch<SetStateAction<ScoreView>>, side?: '左页' | '右页') => <div role="group" aria-label={side ? `${side}缩放` : '谱面缩放'} className="flex shrink-0 items-center gap-1 rounded-lg border border-border px-1">
+    {side && <span className="pl-1 text-xs text-muted-foreground">{side}</span>}
+    <Button variant="ghost" size={side ? 'icon-sm' : 'icon'} aria-label={`缩小${side ?? ''}谱面`} onClick={() => setView(current => zoomScoreAt(current, current.zoom - 0.25, { x: 0, y: 0 }))} disabled={view.zoom <= MIN_SCORE_ZOOM}><ZoomOut className="h-4 w-4" /></Button>
+    <button type="button" onClick={() => setView(INITIAL_SCORE_VIEW)} aria-label={side ? `${side}适应半屏` : undefined} className={`flex flex-col items-center px-1 py-1 text-xs text-muted-foreground ${side ? 'min-w-12' : 'min-w-20'}`} title={side ? `完整显示${side}并居中` : '完整显示曲谱并居中'}>
+      <span>{side ? '适应' : '适应屏幕'}</span><span className="font-mono text-[10px] tabular-nums">{Math.round(view.zoom * 100)}%</span>
+    </button>
+    <Button variant="ghost" size={side ? 'icon-sm' : 'icon'} aria-label={`放大${side ?? ''}谱面`} onClick={() => setView(current => zoomScoreAt(current, current.zoom + 0.25, { x: 0, y: 0 }))} disabled={view.zoom >= MAX_SCORE_ZOOM}><ZoomIn className="h-4 w-4" /></Button>
+  </div>
+  const scoreZoomControls = doubleView ? <>{zoomControls(scoreView, setScoreView, '左页')}{zoomControls(rightScoreView, setRightScoreView, '右页')}</> : zoomControls(scoreView, setScoreView)
+  const pageControls = <>
+    <ScorePageNavigation index={pageIndex} count={pages.length} size={size} onChange={changePage} />
+    {!pdf && pages.length > 1 && <div role="group" aria-label="琴谱显示模式" className="flex shrink-0 items-center gap-0.5 rounded-lg border border-border p-0.5">
+      {([1, 2] as const).map(mode => <Button key={mode} type="button" size="sm" variant={size === mode ? 'secondary' : 'ghost'} aria-pressed={size === mode} onClick={() => {
+        if (mode !== size) { setSpreadSize(mode); resetScoreViews() }
+      }}>{mode === 1 ? '单页' : '双页'}</Button>)}
+    </div>}
+  </>
 
   return (
     <div className={`fixed inset-0 z-50 flex h-dvh flex-col overflow-hidden bg-background text-foreground ${user?.role === 'student' ? 'concert-practice' : ''}`}>
@@ -234,16 +264,26 @@ function PracticeSession() {
         <Button variant="ghost" size="icon" disabled={saving} onClick={() => setLeaveOpen(true)} aria-label="返回琴谱库"><ArrowLeft className="h-5 w-5" /></Button>
         {score && user?.role === 'student' && <ScoreCover score={score} className="concert-practice-cover" />}
         <div className="min-w-0 flex-1 basis-3/4 sm:basis-auto"><h1 className="truncate font-serif text-lg font-semibold">{score?.title ?? '正在准备琴谱…'}</h1><p className="truncate text-xs text-muted-foreground">{score?.composer}{score && ` · ${score.score_type ?? '类型未设置'} · ${score.period ?? '时期未设置'}`}{taskId ? ' · 任务练习' : ' · 沉浸练习'}</p></div>
-        <ScorePageNavigation index={pageIndex} count={pages.length} onChange={changePage} />
-        {zoomControls}
+        {pageControls}
+        {scoreZoomControls}
         <Button variant="outline" size="sm" aria-label="全屏看谱" onClick={toggleScoreFocus} className="gap-2"><Maximize className="h-4 w-4" /><span className="hidden sm:inline">全屏看谱</span></Button>
         <Button variant={assistantOpen ? 'secondary' : 'ghost'} size="sm" onClick={() => setAssistantOpen((v) => !v)} className="gap-2"><Sparkles className="h-4 w-4" /><span className="hidden sm:inline">AI 助教</span></Button>
       </header>
       {!scoreFocused && score?.tips && <div className="shrink-0 border-b border-border bg-primary/5 px-5 py-2 text-xs leading-relaxed text-primary">教师提醒：{score.tips}</div>}
       <div className="relative flex min-h-0 flex-1">
-        {scoreFocused && <div role="toolbar" aria-label="全屏看谱控制" className="absolute left-2 right-2 top-2 z-20 flex flex-wrap items-center justify-end gap-2 rounded-lg bg-card/95 p-1 shadow-sm sm:left-auto"><ScorePageNavigation index={pageIndex} count={pages.length} onChange={changePage} />{zoomControls}<Button variant="outline" size="sm" onClick={toggleScoreFocus} className="gap-2" title="退出全屏看谱（Esc）"><Minimize className="h-4 w-4" />退出全屏</Button></div>}
-        <section aria-label="琴谱显示区域" className={`concert-score-stage min-h-0 min-w-0 flex-1 overflow-hidden bg-muted/20 ${scoreFocused ? pages.length > 1 ? 'pt-28 sm:pt-16' : 'pt-16' : ''}`}>
-          {!score ? <div className="flex h-full items-center justify-center gap-3 text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin" />正在加载琴谱…</div> : page?.image_url ? pdf ? <iframe src={`${page.image_url.split('#')[0]}#${scoreView.zoom === 1 ? 'view=Fit&zoom=page-fit' : `zoom=${Math.round(scoreView.zoom * 100)}`}`} title={`${score.title}完整 PDF 琴谱`} className="h-full min-h-full w-full border-0" /> : <ScoreViewport key={`${score.id}-${pageIndex}`} src={page.image_url} title={`${score.title}${pages.length > 1 ? `第 ${pageIndex + 1} 页` : ''}`} view={scoreView} onChange={setScoreView} /> : <div className="flex h-full min-h-72 flex-col items-center justify-center gap-4 p-8 text-center"><FileMusic className="h-14 w-14 text-primary/40" /><h2 className="font-serif text-2xl">{score.title}</h2><p className="max-w-md text-sm leading-relaxed text-muted-foreground">该曲目暂未上传谱面文件。可继续计时练习，或请教师补充琴谱。</p></div>}
+        <section aria-label="琴谱显示区域" className="concert-score-stage flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-muted/20">
+          {scoreFocused && <div role="toolbar" aria-label="全屏看谱控制" className="z-20 m-2 flex shrink-0 flex-wrap items-center justify-end gap-2 self-end rounded-lg bg-card/95 p-1 shadow-sm">{pageControls}{scoreZoomControls}<Button variant="outline" size="sm" onClick={toggleScoreFocus} className="gap-2" title="退出全屏看谱（Esc）"><Minimize className="h-4 w-4" />退出全屏</Button></div>}
+          <div className="min-h-0 flex-1">
+          {!score ? <div className="flex h-full items-center justify-center gap-3 text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin" />正在加载琴谱…</div> : page?.image_url ? pdf ? <iframe src={`${page.image_url.split('#')[0]}#${scoreView.zoom === 1 ? 'view=Fit&zoom=page-fit' : `zoom=${Math.round(scoreView.zoom * 100)}`}`} title={`${score.title}完整 PDF 琴谱`} className="h-full min-h-full w-full border-0" /> : <ScoreViewport key={`${score.id}-${start}-${size}`} spread={{
+            current: spreadPages(start, end),
+            previous: spreadPages(previous, start),
+            next: spreadPages(next, end + size),
+            onTurn: direction => {
+              const destination = direction === 1 ? next : previous
+              if (destination !== null) changePage(destination)
+            },
+          }} view={scoreView} onChange={setScoreView} rightPane={doubleView ? { view: rightScoreView, onChange: setRightScoreView } : undefined} /> : <div className="flex h-full min-h-72 flex-col items-center justify-center gap-4 p-8 text-center"><FileMusic className="h-14 w-14 text-primary/40" /><h2 className="font-serif text-2xl">{score.title}</h2><p className="max-w-md text-sm leading-relaxed text-muted-foreground">该曲目暂未上传谱面文件。可继续计时练习，或请教师补充琴谱。</p></div>}
+          </div>
         </section>
         {assistantOpen && <aside className="absolute inset-y-0 right-0 z-10 flex w-80 max-w-full flex-col border-l border-border bg-background p-3 shadow-xl md:static md:w-96 md:shrink-0"><div className="mb-2 flex items-center justify-between text-sm"><span className="text-primary">知音 · AI 助教</span><Button variant="ghost" size="icon" onClick={() => setAssistantOpen(false)} aria-label="关闭 AI 助教"><X className="h-4 w-4" /></Button></div><ChatPanel className="min-h-0 flex-1" context={{ kind: 'score', name: score?.title }} placeholder="询问指法、节奏与练习方法…" /></aside>}
       </div>
