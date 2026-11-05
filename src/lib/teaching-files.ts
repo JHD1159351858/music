@@ -1,7 +1,7 @@
 import { StorageClient } from 'coder-coding-dev-sdk'
 import { ApiError, dbCheck, type TeachingClient } from './teaching-server'
 import { deleteLocalFile, getLocalFileUrl, LocalFileError } from './local-files'
-import { getScorePages, scoreFileIds, type ScoreFiles } from './score-pages'
+import { getScorePages, scorePageFileIds, type ScoreFiles } from './score-pages'
 
 type ScoreFile = ScoreFiles
 interface PracticeFile { audio_file_id?: string | null; audio_url?: string | null }
@@ -19,22 +19,24 @@ export function teachingStorage(): StorageClient {
   catch { throw new ApiError('对象存储配置无效，请检查服务地址与密钥配置', 503) }
 }
 
-export async function removeUnusedTeachingFile(supabase: TeachingClient, fileId: string): Promise<void> {
+export async function removeUnusedTeachingFile(supabase: TeachingClient, fileId: string): Promise<boolean> {
   const references = await Promise.all([
     supabase.from('scores').select('id').eq('file_id', fileId).limit(1),
     supabase.from('scores').select('id').contains('pages', [{ file_id: fileId }]).limit(1),
+    supabase.from('scores').select('id').eq('cover_file_id', fileId).limit(1),
     supabase.from('practice_records').select('id').eq('audio_file_id', fileId).limit(1),
     supabase.from('submissions').select('id').eq('audio_file_id', fileId).limit(1),
     supabase.from('submissions').select('id').eq('video_file_id', fileId).limit(1),
     supabase.from('map_musicians').select('id').eq('avatar_file_id', fileId).limit(1),
   ])
   for (const reference of references) dbCheck(reference.error)
-  if (references.some(reference => reference.data?.length)) return
-  if (fileId.startsWith('local:')) { await deleteLocalFile(fileId); return }
+  if (references.some(reference => reference.data?.length)) return false
+  if (fileId.startsWith('local:')) { await deleteLocalFile(fileId); return true }
   try {
     const deleted = await teachingStorage().deleteFile({ fileId })
     if (!deleted) throw new Error('Delete failed')
   } catch { throw new ApiError('记录已删除，但存储文件清理失败，请联系教师处理', 502) }
+  return true
 }
 
 export async function getTeachingFileUrl(fileId: string): Promise<{ fileId: string; url: string; expiresAt: string }> {
@@ -50,7 +52,7 @@ export async function getTeachingFileUrl(fileId: string): Promise<{ fileId: stri
   } catch { throw new ApiError('文件链接续签失败，请稍后重试', 502) }
 }
 
-async function signedUrls(fileIds: (string | null | undefined)[]): Promise<Map<string, string>> {
+async function signedUrls(fileIds: (string | null | undefined)[], allowMissing = false): Promise<Map<string, string>> {
   const ids = [...new Set(fileIds.filter((id): id is string => !!id))]
   const urls = new Map<string, string>()
   if (!ids.length) return urls
@@ -58,19 +60,25 @@ async function signedUrls(fileIds: (string | null | undefined)[]): Promise<Map<s
   await Promise.all(Array.from({ length: Math.min(4, ids.length) }, async () => {
     while (cursor < ids.length) {
       const fileId = ids[cursor++]
-      const file = await getTeachingFileUrl(fileId)
-      urls.set(fileId, file.url)
+      try {
+        const file = await getTeachingFileUrl(fileId)
+        urls.set(fileId, file.url)
+      } catch (error: unknown) {
+        if (!allowMissing) throw error
+        urls.set(fileId, '')
+      }
     }
   }))
   return urls
 }
 
 export async function refreshScoreFiles<T extends ScoreFile>(rows: T[]): Promise<T[]> {
-  const urls = await signedUrls(rows.flatMap(scoreFileIds))
-  if (!urls.size) return rows
+  const urls = await signedUrls(rows.flatMap(scorePageFileIds))
+  const covers = await signedUrls(rows.map(row => row.cover_file_id), true)
+  if (!urls.size && !covers.size && !rows.some(row => Object.prototype.hasOwnProperty.call(row, 'cover_file_id'))) return rows
   return rows.map((row) => {
     const pages = getScorePages(row).map(page => ({ ...page, image_url: page.file_id ? urls.get(page.file_id)! : page.image_url }))
-    return { ...row, ...(row.file_id ? { image_url: urls.get(row.file_id)! } : {}), ...(row.pages?.length ? { pages } : {}) }
+    return { ...row, ...(row.file_id ? { image_url: urls.get(row.file_id)! } : {}), ...(row.pages?.length ? { pages } : {}), ...(Object.prototype.hasOwnProperty.call(row, 'cover_file_id') ? { cover_url: row.cover_file_id ? covers.get(row.cover_file_id) || null : null } : {}) }
   })
 }
 

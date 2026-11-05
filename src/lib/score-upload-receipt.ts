@@ -8,13 +8,13 @@ interface ReceiptFile {
   fileId: string
   ownerId: string
   fileType: string
-  purpose?: 'map-avatar'
+  purpose?: 'map-avatar' | 'score-cover'
 }
 
 interface ReceiptTarget {
   fileId: string
   ownerId: string
-  purpose?: 'map-avatar'
+  purpose?: 'map-avatar' | 'score-cover'
 }
 
 interface ReceiptPayload {
@@ -23,7 +23,7 @@ interface ReceiptPayload {
   o: string
   t: string
   e: number
-  p?: 'map-avatar'
+  p?: 'map-avatar' | 'score-cover'
 }
 
 function signature(encoded: string): string {

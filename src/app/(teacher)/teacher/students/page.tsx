@@ -86,7 +86,7 @@ export default function TeacherStudentsPage() {
     {error && <AdminNotice message={error} onRetry={() => void load()} />}
     <section className="space-y-4" aria-labelledby="teacher-classes-title">
       <div><h2 id="teacher-classes-title" className="text-lg font-semibold">我的班级</h2><p className="mt-1 text-sm text-muted-foreground">班级 ID 用于识别班级，入班码供学生加入。班级名称需全系统唯一；已有同名学生归属会自动计入人数。</p></div>
-      <form onSubmit={event => void createClass(event)} className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4">
+      <form onSubmit={event => void createClass(event)} className="admin-filter-bar flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4">
         <div className="w-full space-y-2 sm:w-72"><Label htmlFor="new-class-name">新建班级名称</Label><Input id="new-class-name" value={newClassName} onChange={event => setNewClassName(event.target.value)} placeholder="例如：2026级钢琴一班" maxLength={100} disabled={creating} required /></div>
         <Button type="submit" disabled={creating || !newClassName.trim()}>{creating && <Loader2 className="size-4 animate-spin" />}{creating ? '创建中…' : '创建班级'}</Button>
       </form>

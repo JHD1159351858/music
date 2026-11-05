@@ -67,6 +67,7 @@ export const scores = pgTable(
     file_id: text('file_id'),
     file_name: text('file_name'),
     file_type: text('file_type'),
+    cover_file_id: text('cover_file_id'),
     pages: jsonb('pages').$type<ScorePage[]>().default([]).notNull(),
     source: text('source').notNull(), // teacher | student
     owner_id: varchar('owner_id', { length: 36 }).references(() => profiles.id, { onDelete: 'cascade' }),

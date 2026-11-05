@@ -86,14 +86,17 @@ test('invalid or explicitly empty public origin fails closed with a clear config
   }
 })
 
-test('proxy login and legacy redirects use the configured external origin', async () => {
+test('proxy login and role redirects use the configured external origin', async () => {
   const response = await proxy(new NextRequest(internalOrigin + '/teacher?tab=overview', { headers: { host: 'untrusted.invalid', 'x-forwarded-host': 'untrusted.invalid' } }))
   const target = new URL(response.headers.get('location') ?? '')
   assert.equal(target.origin, publicOrigin)
   assert.equal(target.searchParams.get('next'), '/teacher?tab=overview')
   assert.equal(target.searchParams.get('role'), 'teacher')
-  const legacy = await proxy(new NextRequest(internalOrigin + '/analysis'))
-  assert.equal(legacy.headers.get('location'), publicOrigin + '/practice')
+  const analysis = new URL((await proxy(new NextRequest(internalOrigin + '/analysis'))).headers.get('location') ?? '')
+  assert.equal(analysis.origin, publicOrigin)
+  assert.equal(analysis.pathname, '/')
+  assert.equal(analysis.searchParams.get('login'), '1')
+  assert.equal(analysis.searchParams.get('next'), '/analysis')
   const token = await signAuthToken({ kind: 'session', userId: 'teacher', role: 'teacher', expiresAt: Date.now() + 60_000 })
   const teacherRedirect = await proxy(new NextRequest(internalOrigin + '/tasks?create=1', { headers: { cookie: `${AUTH_SESSION_COOKIE}=${token}` } }))
   assert.equal(teacherRedirect.headers.get('location'), publicOrigin + '/teacher/tasks?create=1')

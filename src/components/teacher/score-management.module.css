@@ -1,0 +1,56 @@
+.workspace {
+  display: grid;
+  align-items: start;
+  gap: 1.5rem;
+}
+
+.catalog {
+  min-width: 0;
+}
+
+.catalog :global(th),
+.catalog :global(td) {
+  padding-right: .625rem;
+  padding-left: .625rem;
+}
+
+.catalog :global(tr:has([data-score-selected='true'])) {
+  background: color-mix(in oklab, var(--primary) 7%, var(--card));
+  box-shadow: inset 3px 0 var(--primary);
+}
+
+.panel {
+  min-width: 0;
+}
+
+.editor > section {
+  max-height: min(58rem, calc(100svh - 7rem));
+}
+
+.editor {
+  scroll-margin-top: 6rem;
+}
+
+.editor :global(.score-editor-cover .grid) {
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: .75rem;
+}
+
+.editor :global(.score-editor-cover section) {
+  padding: .875rem;
+}
+
+@media (min-width: 1280px) {
+  .editor > section {
+    max-height: calc(100svh - 20rem);
+  }
+
+  .workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, .64fr);
+  }
+
+  .panel {
+    position: sticky;
+    top: 6rem;
+  }
+}

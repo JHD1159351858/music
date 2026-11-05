@@ -37,10 +37,10 @@ import { toast } from 'sonner'
 export default function AnalysisPage() {
   const { user } = useRequireUser()
   if (!user) return null
-  return <AnalysisWorkspace key={user.id} />
+  return <AnalysisWorkspace key={user.id} isStudent={user.role === 'student'} />
 }
 
-function AnalysisWorkspace() {
+function AnalysisWorkspace({ isStudent }: { isStudent: boolean }) {
   const [analyzing, setAnalyzing] = useState(false)
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [notation, setNotation] = useState('')
@@ -224,7 +224,7 @@ function AnalysisWorkspace() {
     : []
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${isStudent ? 'concert-module concert-analysis' : ''}`}>
       <header>
         <h1 className="font-serif text-3xl font-bold text-foreground">乐谱分析</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -232,7 +232,9 @@ function AnalysisWorkspace() {
         </p>
       </header>
 
-      <AnalysisHistoryPanel refreshVersion={historyVersion} openingId={openingHistoryId} disabled={analyzing} onOpen={(id) => void openHistory(id)} />
+      <div className={isStudent ? 'concert-analysis-workspace' : 'space-y-6'}>
+      <aside className={isStudent ? 'concert-analysis-history' : undefined}><AnalysisHistoryPanel refreshVersion={historyVersion} openingId={openingHistoryId} disabled={analyzing} onOpen={(id) => void openHistory(id)} /></aside>
+      <div className={isStudent ? 'concert-analysis-content' : 'space-y-6'}>
       {historyOpenError && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"><span>{historyOpenError.message}</span><Button variant="outline" size="sm" onClick={() => void openHistory(historyOpenError.id)}>重试打开</Button></div>}
 
       {!result && !analyzing && (
@@ -461,6 +463,8 @@ function AnalysisWorkspace() {
           </div>
         </div>
       )}
+      </div>
+      </div>
     </div>
   )
 }

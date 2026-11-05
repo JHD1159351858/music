@@ -18,6 +18,7 @@ interface TaskFormProps {
   task: PracticeTask | null
   scores: Score[]
   students: Profile[]
+  embedded?: boolean
   onClose: () => void
   onSaved: () => void
 }
@@ -32,7 +33,7 @@ function localDateTime(value: string): string {
 
 const MATERIALS = [{ key: 'audio', label: '练习录音' }, { key: 'record', label: '练习记录' }, { key: 'video', label: '自制演奏视频' }] as const
 
-export function TaskForm({ userId, task, scores, students, onClose, onSaved }: TaskFormProps) {
+export function TaskForm({ userId, task, scores, students, embedded = false, onClose, onSaved }: TaskFormProps) {
   const [title, setTitle] = useState(task?.title ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
   const [startsAt, setStartsAt] = useState(task ? localDateTime(task.start_at) : '')
@@ -93,14 +94,10 @@ export function TaskForm({ userId, task, scores, students, onClose, onSaved }: T
     }
   }
 
-  return (
-    <Dialog open onOpenChange={(open) => { if (!open && !saving) onClose() }}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader><DialogTitle>{task ? '编辑练习任务' : '发布练习任务'}</DialogTitle><DialogDescription>设置任务时间、面向范围、练习曲目与提交要求。</DialogDescription></DialogHeader>
-        <form className="space-y-5" onSubmit={submit}>
+  const form = <form className="space-y-5" onSubmit={submit}>
           <div className="space-y-2"><Label htmlFor="task-title">任务名称</Label><Input id="task-title" required maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：本周音阶与琶音练习" /></div>
           <div className="space-y-2"><Label htmlFor="task-description">练习要求</Label><Textarea id="task-description" required rows={3} maxLength={10000} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="写明练习重点、速度与提交说明" /></div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className={embedded ? 'grid gap-4' : 'grid gap-4 sm:grid-cols-2'}>
             <div className="space-y-2"><Label htmlFor="task-start">开始时间</Label><Input id="task-start" type="datetime-local" required value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /></div>
             <div className="space-y-2"><Label htmlFor="task-end">截止时间</Label><Input id="task-end" type="datetime-local" required value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></div>
           </div>
@@ -118,7 +115,6 @@ export function TaskForm({ userId, task, scores, students, onClose, onSaved }: T
           <div className="space-y-3"><Label>提交要求</Label>{MATERIALS.map(({ key, label }) => <div key={key} className="flex items-center justify-between gap-4 rounded-lg border border-border px-3 py-2"><span className="text-sm">{label}</span><Select value={requirements[key]} onValueChange={(value: Requirement) => setRequirements((current) => ({ ...current, [key]: value }))}><SelectTrigger className="w-28"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="required">必交</SelectItem><SelectItem value="optional">选交</SelectItem><SelectItem value="off">无需提交</SelectItem></SelectContent></Select></div>)}</div>
           <Button type="submit" className="w-full" disabled={saving || (scoreMode === 'fixed' && !availableScores.some((score) => score.id === scoreId))}>{saving ? '保存中…' : task ? '保存修改' : '发布任务'}</Button>
         </form>
-      </DialogContent>
-    </Dialog>
-  )
+  if (embedded) return <section className="max-h-[calc(100dvh-10rem)] overflow-y-auto"><div className="mb-4 flex items-start justify-between gap-3"><div><h2 className="font-serif text-xl">{task ? '编辑练习任务' : '发布练习任务'}</h2><p className="mt-1 text-sm text-muted-foreground">设置任务时间、面向范围、练习曲目与提交要求。</p></div><Button type="button" variant="ghost" size="sm" disabled={saving} onClick={onClose}>取消</Button></div>{form}</section>
+  return <Dialog open onOpenChange={(open) => { if (!open && !saving) onClose() }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>{task ? '编辑练习任务' : '发布练习任务'}</DialogTitle><DialogDescription>设置任务时间、面向范围、练习曲目与提交要求。</DialogDescription></DialogHeader>{form}</DialogContent></Dialog>
 }

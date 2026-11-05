@@ -34,6 +34,42 @@ body[data-teacher-admin='true'] {
   font-family: var(--font-sans);
   color-scheme: light;
 }
-.teacher-sidebar { background: var(--sidebar); color: var(--sidebar-foreground); }
+.teacher-admin {
+  background: var(--background);
+  background-image: linear-gradient(90deg, color-mix(in oklab, var(--primary) 3%, transparent) 1px, transparent 1px);
+  background-size: 4rem 4rem;
+}
+.teacher-sidebar {
+  background: linear-gradient(180deg, var(--sidebar), color-mix(in oklab, var(--sidebar) 86%, var(--foreground)));
+  color: var(--sidebar-foreground);
+}
+.teacher-admin [data-slot='button'][data-variant='default'] {
+  box-shadow: 0 8px 16px color-mix(in oklab, var(--primary) 18%, transparent);
+}
+.teacher-admin [data-slot='input'], .teacher-admin [data-slot='select-trigger'] {
+  background: var(--card);
+  border-color: var(--border);
+}
+.teacher-admin [data-slot='badge'] { border-radius: 999px; font-weight: 500; }
+.teacher-admin .admin-page-header {
+  min-height: 5.625rem;
+  padding: .25rem 0 .75rem;
+}
+.teacher-admin .admin-page-eyebrow { display: none; }
+.teacher-admin .admin-page-header h1 { font-family: var(--font-serif); font-size: clamp(1.625rem, 2.1vw, 2rem); letter-spacing: -.035em; }
+.teacher-admin .admin-filter-bar { border-radius: 1rem; box-shadow: 0 8px 24px color-mix(in oklab, var(--foreground) 3%, transparent); }
+.teacher-admin .admin-data-table { box-shadow: 0 12px 32px color-mix(in oklab, var(--foreground) 4%, transparent); }
+.teacher-admin .admin-data-table thead { background: color-mix(in oklab, var(--primary) 5%, var(--muted)); }
+.teacher-admin .admin-data-table tbody tr { transition: background-color .16s ease, box-shadow .16s ease; }
+.teacher-admin .admin-data-table tbody tr:hover { background: color-mix(in oklab, var(--primary) 5%, var(--card)); box-shadow: inset 3px 0 var(--primary); }
+.teacher-admin .admin-stat-strip { border-left: 2px solid var(--primary); }
+.teacher-admin .admin-stat-strip > div + div { border-left: 1px solid var(--border); }
+.teacher-admin .admin-stat-strip + div .h-60 { height: 13rem; }
+.teacher-admin .admin-stat-strip + div > section { padding: 1rem; }
+.teacher-admin .admin-stat-strip + div > section > div:first-child { margin-bottom: .75rem; }
+@media (max-width: 639px) {
+  .teacher-admin .admin-page-header { min-height: 0; padding: .25rem 0 .5rem; }
+  .teacher-admin .admin-stat-strip > div + div { border-left: 0; border-top: 1px solid var(--border); }
+}
 .teacher-admin select, .teacher-admin input, .teacher-admin textarea { font-family: inherit; }
 .teacher-admin [data-slot='card'] { box-shadow: none; }

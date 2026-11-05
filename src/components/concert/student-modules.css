@@ -1,0 +1,165 @@
+.concert-module {
+  --concert-line: color-mix(in oklab, var(--primary) 18%, var(--border));
+  --concert-surface: color-mix(in oklab, var(--card) 92%, var(--primary) 8%);
+  color: var(--foreground);
+}
+
+.concert-module > header {
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--concert-line);
+}
+
+.concert-module > header h1 {
+  font-size: clamp(1.75rem, 2.6vw, 2.35rem);
+  font-weight: 600;
+  letter-spacing: .025em;
+  line-height: 1.25;
+}
+
+.concert-module :where(section, article, form).bg-card,
+.concert-module :where(div.bg-card).rounded-xl:not([class*="border-destructive"]) {
+  border-color: var(--concert-line);
+  background: linear-gradient(135deg, var(--concert-surface), var(--card) 65%);
+  box-shadow: 0 1rem 2.5rem color-mix(in oklab, var(--background) 32%, transparent);
+}
+
+.concert-module :where(input, textarea, [data-slot="select-trigger"]) {
+  background-color: color-mix(in oklab, var(--background) 65%, var(--card));
+  color: var(--foreground);
+}
+
+.concert-module :where([data-slot="tabs-list"]) {
+  min-height: 2.75rem;
+  padding: .25rem;
+  border: 1px solid var(--concert-line);
+  background: color-mix(in oklab, var(--background) 58%, var(--card));
+}
+
+.concert-module :where([data-slot="tabs-trigger"][data-state="active"]) {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: none;
+}
+
+.concert-analysis-workspace,
+.concert-analysis-content,
+.concert-analysis-history { min-width: 0; }
+.concert-analysis-workspace { display: grid; gap: 1.25rem; }
+.concert-analysis-content { display: grid; align-content: start; gap: 1.25rem; }
+.concert-analysis-content > [data-slot="tabs"] { width: 100%; max-width: none; }
+.concert-analysis-content [data-slot="table-head"] { color: var(--primary); }
+.concert-analysis-content [data-slot="table-row"] { border-color: var(--concert-line); }
+.concert-analysis-content [data-slot="table-row"]:nth-child(even) { background: color-mix(in oklab, var(--primary) 3%, transparent); }
+.concert-analysis-history [aria-label="分析历史"] { padding: 1rem; }
+.concert-analysis-history ul > li { align-items: start; border-color: var(--concert-line); }
+.concert-analysis-history ul > li button { color: var(--primary); }
+
+.concert-task-card { position: relative; min-width: 0; gap: 1.25rem; }
+.concert-task-card:hover { box-shadow: inset .2rem 0 var(--primary), 0 1rem 2rem color-mix(in oklab, var(--background) 35%, transparent); }
+.concert-task-card .concert-task-identity { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.concert-tasks .concert-task-copy { min-width: 0; flex: 1; }
+.concert-tasks .concert-task-copy h3 { margin-top: 0; }
+.concert-task-card .concert-task-emblem { width: 3rem; height: 3rem; border: 1px solid var(--concert-line); }
+.concert-task-cover { width: 100%; height: 100%; object-fit: cover; }
+.concert-task-card .concert-task-identity[data-has-cover="true"] { position: relative; display: block; height: 10rem; overflow: hidden; border-radius: var(--radius); }
+.concert-task-identity[data-has-cover="true"] > [data-slot="badge"] { position: absolute; left: .5rem; bottom: .5rem; max-width: calc(100% - 1rem); }
+.concert-task-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; padding: 1.25rem 0; border-block: 1px solid var(--concert-line); }
+.concert-task-step { display: flex; align-items: flex-start; gap: .65rem; }
+.concert-task-step > span { display: flex; align-items: center; justify-content: center; flex: 0 0 2rem; height: 2rem; border: 1px solid var(--concert-line); border-radius: 50%; color: var(--muted-foreground); background: var(--card); }
+.concert-task-step[aria-current="step"] > span,
+.concert-task-step[data-complete="true"] > span { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+.concert-task-step strong { display: block; font-size: .875rem; font-weight: 500; }
+.concert-task-step p { margin-top: .25rem; font-size: .75rem; line-height: 1.6; color: var(--muted-foreground); }
+.concert-task-detail .concert-task-heading { min-width: 0; display: flex; align-items: center; gap: 1.25rem; }
+.concert-task-heading-cover { flex-shrink: 0; width: 6.5rem; height: 7.5rem; object-fit: cover; border: 1px solid var(--concert-line); border-radius: var(--radius); }
+.concert-submission-grid { display: grid; align-items: start; gap: 1.5rem; }
+.concert-submission-grid > * { min-width: 0; }
+.concert-submission-grid .concert-review > div { border-color: var(--concert-line); }
+.concert-review { border-radius: var(--radius); }
+.concert-submission-grid audio { color-scheme: dark; }
+
+.concert-community-layout { display: grid; align-items: start; gap: 1.5rem; }
+.concert-community-main { min-width: 0; }
+.concert-community-note { padding: 1.5rem; border: 1px solid var(--concert-line); border-radius: var(--radius); background: linear-gradient(160deg, var(--concert-surface), var(--background)); }
+.concert-community-note h2 { font-family: var(--font-serif, serif); font-size: 1.2rem; }
+.concert-community-note p { margin-top: 1rem; color: var(--muted-foreground); font-size: .875rem; line-height: 1.9; }
+.concert-community-note button { margin-top: 1.25rem; width: 100%; }
+.concert-community .concert-post-avatar { display: flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--concert-line); background: var(--concert-surface); color: var(--primary); font-family: var(--font-serif, serif); }
+.concert-community article { padding: 1.5rem; }
+.concert-community article h3 { font-size: 1.15rem; line-height: 1.6; }
+.concert-community article > p { line-height: 1.9; }
+
+.concert-map nav[aria-label="音乐史时代"] { position: relative; gap: .75rem; padding: .75rem; border-color: var(--concert-line); }
+.concert-map nav[aria-label="音乐史时代"] button { border: 1px solid transparent; border-radius: var(--radius); }
+.concert-map nav[aria-label="音乐史时代"] button[aria-pressed="true"] { background: color-mix(in oklab, var(--primary) 13%, var(--card)); border-color: var(--primary); }
+.concert-map [aria-label="人物资料"] { background: linear-gradient(160deg, var(--concert-surface), var(--card) 65%); }
+.concert-map [aria-label="人物资料"] > div:first-child img,
+.concert-map [aria-label="人物资料"] > div:first-child > span { width: 4.5rem; height: 4.5rem; }
+.concert-map [aria-label="音乐史地图与人物资料"] { border-color: var(--concert-line); }
+.concert-map [aria-label="音乐史地图与人物资料"] > div:last-child { background: color-mix(in oklab, var(--primary) 3%, var(--background)); }
+.concert-stats .concert-stat-card { padding: 1.5rem; }
+.concert-stats .concert-stat-card > div:last-child { font-size: clamp(1.65rem, 2.7vw, 2.35rem); font-family: inherit; font-weight: 600; }
+.concert-stats .concert-chart { padding: 1.5rem; border-color: var(--concert-line); }
+.concert-stats .concert-chart h2 { margin-bottom: 1.5rem; }
+
+.concert-practice { background: var(--background); }
+.concert-practice .concert-practice-header { background: color-mix(in oklab, var(--card) 90%, transparent); border-color: color-mix(in oklab, var(--primary) 18%, var(--border)); }
+.concert-practice-cover { width: 2.75rem; height: 3.25rem; border-radius: var(--radius); border: 1px solid color-mix(in oklab, var(--primary) 35%, var(--border)); object-fit: cover; flex-shrink: 0; }
+.concert-practice .concert-score-stage { background-color: var(--background); background-image: linear-gradient(color-mix(in oklab, var(--background) 45%, transparent), color-mix(in oklab, var(--background) 65%, transparent)), url('/covers/practice-desk.png'); background-size: cover; background-position: center; }
+.concert-practice .concert-practice-footer { background: linear-gradient(110deg, color-mix(in oklab, var(--primary) 5%, var(--card)), var(--background)); border-color: color-mix(in oklab, var(--primary) 25%, var(--border)); padding-block: 1rem; }
+.concert-practice .concert-practice-footer [role="timer"] { color: var(--foreground); font-size: clamp(1.5rem, 3vw, 2rem); }
+.concert-practice .concert-practice-footer > div:last-child button { min-height: 2.75rem; padding-inline: 1.25rem; }
+
+.concert-assistant { --concert-line: color-mix(in oklab, var(--primary) 22%, var(--border)); }
+.concert-assistant[role="dialog"] { background: linear-gradient(160deg, color-mix(in oklab, var(--primary) 6%, var(--card)), var(--background)); border-color: var(--concert-line); box-shadow: 0 1rem 4rem color-mix(in oklab, var(--background) 85%, transparent); }
+.concert-assistant > header { background: transparent; padding-block: 1rem; border-color: var(--concert-line); }
+.concert-assistant [data-slot="tabs-list"] { border-bottom: 1px solid var(--concert-line); background: transparent; border-radius: 0; }
+.concert-assistant [data-slot="tabs-trigger"][data-state="active"] { border-bottom: 2px solid var(--primary); border-radius: 0; background: color-mix(in oklab, var(--primary) 7%, transparent); color: var(--primary); box-shadow: none; }
+.concert-assistant .concert-material-card { background: color-mix(in oklab, var(--primary) 4%, var(--card)); border-color: var(--concert-line); }
+.concert-assistant .concert-material-card h3 { color: var(--primary); }
+.concert-assistant .concert-chat { border: 0; background: transparent; }
+
+:where(.concert-module, .concert-practice, .concert-assistant) .concert-chat { background: color-mix(in oklab, var(--background) 38%, var(--card)); border-color: color-mix(in oklab, var(--primary) 18%, var(--border)); }
+:where(.concert-module, .concert-practice, .concert-assistant) .concert-chat > div:first-child { padding-block: 1rem; }
+:where(.concert-module, .concert-practice, .concert-assistant) .concert-chat-message { max-width: 90%; border: 1px solid color-mix(in oklab, var(--primary) 12%, var(--border)); line-height: 1.85; }
+:where(.concert-module, .concert-practice, .concert-assistant) .concert-chat-message[data-role="user"] { color: var(--foreground); background: color-mix(in oklab, var(--primary) 13%, var(--card)); border-radius: var(--radius) var(--radius) 0 var(--radius); }
+:where(.concert-module, .concert-practice, .concert-assistant) .concert-chat-message[data-role="assistant"] { background: color-mix(in oklab, var(--card) 92%, var(--primary)); border-radius: 0 var(--radius) var(--radius) var(--radius); }
+:where(.concert-module, .concert-practice, .concert-assistant) .concert-chat input { background: var(--background); }
+
+@media (min-width: 640px) {
+  .concert-task-card { display: grid; grid-template-columns: 8rem minmax(0, 1fr); padding: 1.25rem; }
+  .concert-task-card .concert-task-identity { flex-direction: column; justify-content: center; min-height: 9rem; border-radius: var(--radius); border: 1px solid var(--concert-line); background: radial-gradient(ellipse at 50% 20%, color-mix(in oklab, var(--primary) 12%, transparent), transparent 80%), var(--background); }
+  .concert-task-card .concert-task-emblem { width: 3.5rem; height: 3.5rem; }
+  .concert-practice .concert-practice-footer > div:first-child > div + div { border-left: 1px solid var(--border); padding-left: 1.5rem; }
+}
+
+@media (min-width: 1024px) {
+  .concert-submission-grid { grid-template-columns: minmax(0, 1fr) minmax(17rem, .55fr); }
+  .concert-review { position: sticky; top: 1.5rem; }
+  .concert-community-layout { grid-template-columns: minmax(0, 1fr) 15rem; }
+  .concert-community-note { position: sticky; top: 1.5rem; }
+}
+
+@media (min-width: 1280px) {
+  .concert-analysis-workspace { grid-template-columns: 13rem minmax(0, 1fr); align-items: start; }
+  .concert-analysis-history { position: sticky; top: 1.5rem; }
+  .concert-analysis-history [aria-label="分析历史"] > div:first-child { flex-direction: column; }
+  .concert-analysis-history ul { max-height: 37rem; }
+  .concert-analysis-history ul > li { flex-direction: column; gap: .75rem; }
+  .concert-analysis-history ul > li > button { width: 100%; }
+}
+
+@media (max-width: 639px) {
+  .concert-task-steps { gap: .5rem; }
+  .concert-task-step { flex-direction: column; }
+  .concert-task-step p { display: none; }
+  .concert-task-heading-cover { width: 4rem; height: 4.75rem; }
+  .concert-task-detail .concert-task-heading { gap: .75rem; }
+  .concert-task-detail .concert-task-heading h1 { font-size: 1.4rem; }
+  .concert-community-note { order: 2; }
+  .concert-practice .concert-practice-header { gap: .4rem; padding-block: .6rem; }
+  .concert-practice-cover { display: none; }
+  .concert-practice .concert-practice-footer { gap: .75rem; padding-block: .65rem; }
+  .concert-practice .concert-practice-footer > div:last-child { width: 100%; }
+  .concert-practice .concert-practice-footer > div:last-child button { flex: 1; }
+}

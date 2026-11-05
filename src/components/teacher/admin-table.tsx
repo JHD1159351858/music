@@ -12,7 +12,7 @@ export interface AdminColumn<T> {
 }
 
 export function AdminPageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
-  return <div className="mb-6 flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-2xl font-semibold tracking-tight">{title}</h1>{description && <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>}</div>{actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}</div>
+  return <div className="admin-page-header mb-5 flex flex-wrap items-start justify-between gap-4"><div><h1 className="font-semibold">{title}</h1>{description && <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>}</div>{actions && <div className="flex flex-wrap items-center gap-2 self-center">{actions}</div>}</div>
 }
 
 export function AdminNotice({ message, onRetry }: { message: string; onRetry?: () => void }) {
@@ -26,7 +26,7 @@ export function AdminTable<T>({ rows, columns, rowKey, emptyText = '暂无数据
   const pages = Math.max(1, Math.ceil(rows.length / pageSize))
   const current = Math.min(page, pages)
   const visible = pagination ? rows.slice((current - 1) * pageSize, current * pageSize) : rows
-  return <div className="overflow-hidden rounded-xl border border-border bg-card">
+  return <div className="admin-data-table overflow-hidden rounded-xl border border-border bg-card">
     <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="border-b border-border bg-muted/60 text-muted-foreground"><tr>{columns.map(column => <th key={column.key} scope="col" className={cn('whitespace-nowrap px-4 py-3 text-xs font-medium', column.className)}>{column.label}</th>)}</tr></thead>
       <tbody className="divide-y divide-border">{visible.map(row => <tr key={rowKey(row)} className="hover:bg-muted/30">{columns.map(column => <td key={column.key} className={cn('px-4 py-3.5 align-middle', column.className)}>{column.render(row)}</td>)}</tr>)}</tbody>
     </table>{visible.length === 0 && <div className="px-5 py-14 text-center text-sm text-muted-foreground">{emptyText}</div>}</div>

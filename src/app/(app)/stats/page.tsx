@@ -76,7 +76,7 @@ export default function StatsPage() {
   const o = data?.overview
 
   return (
-    <div className="space-y-8">
+    <div className={`space-y-8 ${isTeacher ? '' : 'concert-module concert-stats'}`}>
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-serif text-3xl font-bold text-foreground">{isTeacher ? '班级练琴统计' : '我的练琴数据'}</h1>
@@ -113,7 +113,7 @@ export default function StatsPage() {
           { icon: Clock, label: '练习总时长', value: o ? fmtHours(o.totalSeconds) : '—' },
           { icon: Clock, label: '平均单次时长', value: o ? fmtHours(o.avgSessionSeconds) : '—' },
         ]).map((c) => (
-          <div key={c.label} className="rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/40">
+          <div key={c.label} className="concert-stat-card rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/40">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <c.icon className="h-4 w-4 text-primary" />
               {c.label}
@@ -169,7 +169,7 @@ export default function StatsPage() {
 
         {/* 图表区 */}
         <div className={isTeacher ? 'space-y-6 lg:col-span-3' : 'grid gap-6 lg:grid-cols-2'}>
-          <div className="rounded-xl border border-border bg-card p-5">
+          <div className="concert-chart rounded-xl border border-border bg-card p-5">
             <h2 className="mb-4 font-serif text-lg font-semibold text-foreground">{isTeacher ? '学生时长分布' : '近 7 日练习次数'}</h2>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
@@ -189,7 +189,7 @@ export default function StatsPage() {
               </ResponsiveContainer>
             </div>
           </div>
-          <div className="rounded-xl border border-border bg-card p-5">
+          <div className="concert-chart rounded-xl border border-border bg-card p-5">
             <h2 className="mb-4 font-serif text-lg font-semibold text-foreground">近 7 日{isTeacher ? '班级总' : '练习'}时长趋势</h2>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">

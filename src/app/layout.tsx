@@ -7,6 +7,8 @@ import { Toaster } from '@/components/ui/sonner';
 import { CourseAssistant } from '@/components/course-assistant';
 
 import './globals.css';
+import '@/components/concert/concert-hall.css';
+import '@/components/concert/student-modules.css';
 
 export const metadata: Metadata = {
   title: '知音 · 教学智能体',

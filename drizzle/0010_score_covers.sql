@@ -1,0 +1,1 @@
+ALTER TABLE "scores" ADD COLUMN "cover_file_id" text;

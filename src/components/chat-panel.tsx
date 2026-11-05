@@ -117,7 +117,7 @@ export function ChatPanel({ context, autoPrompt, placeholder, className }: ChatP
   }, [messages])
 
   return (
-    <div className={cn('flex min-h-0 flex-col rounded-xl border border-border bg-card', className)}>
+    <div className={cn('concert-chat flex min-h-0 flex-col rounded-xl border border-border bg-card', className)}>
       <div className="flex items-center gap-2 border-b border-border px-4 py-3 text-sm font-medium text-foreground">
         <Sparkles className="h-4 w-4 text-primary" />
         知音 · 智能讲解
@@ -131,8 +131,9 @@ export function ChatPanel({ context, autoPrompt, placeholder, className }: ChatP
         {messages.map((m, i) => (
           <div key={i} className={cn('flex', m.role === 'user' ? 'justify-end' : 'justify-start')}>
             <div
+              data-role={m.role}
               className={cn(
-                'max-w-[85%] rounded-lg px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap',
+                'concert-chat-message max-w-[85%] rounded-lg px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap',
                 m.role === 'user'
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted/60 text-foreground'

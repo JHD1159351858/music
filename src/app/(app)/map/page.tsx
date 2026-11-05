@@ -108,7 +108,7 @@ export default function MusicMapPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className={cn('space-y-5', user.role === 'student' && 'concert-module concert-map')}>
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-serif text-3xl font-bold text-foreground">音乐史地图</h1>

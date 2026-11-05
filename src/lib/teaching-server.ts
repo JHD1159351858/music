@@ -4,7 +4,7 @@ import { createSupabaseServer } from './supabase-server'
 import type { TeachingProfile, PracticeTask, TeachingScore } from './teaching-types'
 import { canReadScore, stableScoreId, taskIsVisible } from './teaching-validation'
 import { readAuthSession } from './auth-session'
-import { localFileMetadata, LocalFileError } from './local-files'
+import { localFileMetadata, localRasterFileType, LocalFileError } from './local-files'
 import { getScorePages, type ScoreFiles } from './score-pages'
 import type { ScorePage } from './teaching-types'
 import { verifyScoreUploadReceipt } from './score-upload-receipt'
@@ -111,6 +111,29 @@ export async function validateScoreFiles(supabase: TeachingClient, user: Teachin
   return { ...first, pages }
 }
 
+export async function validateScoreCover(supabase: TeachingClient, user: TeachingProfile, score: { cover_file_id?: string | null; cover_receipt?: string | null }): Promise<{ cover_file_id: string | null }> {
+  const fileId = score.cover_file_id ?? null
+  if (!fileId) return { cover_file_id: null }
+  if (fileId.startsWith('local:')) {
+    try {
+      const metadata = await localFileMetadata(fileId)
+      if (metadata.ownerId !== user.id) throw new ApiError('不能使用其他用户上传的封面', 403)
+      if (!metadata.type.startsWith('image/') || await localRasterFileType(fileId) !== metadata.type) throw new ApiError('曲目封面须为有效的 PNG、JPEG、WebP、GIF 或 AVIF 图片', 415)
+    } catch (error: unknown) {
+      if (error instanceof LocalFileError) throw new ApiError(error.message, error.status)
+      throw error
+    }
+  } else {
+    const type = verifyScoreUploadReceipt(score.cover_receipt, { fileId, ownerId: user.id, purpose: 'score-cover' })
+    if (!type) {
+      const owned = await supabase.from('scores').select('id').eq('cover_file_id', fileId).eq('owner_id', user.id).limit(1)
+      dbCheck(owned.error)
+      if (!owned.data?.length) throw new ApiError('封面上传凭证无效或已过期，请重新上传', 403)
+    } else if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'].includes(type)) throw new ApiError('曲目封面须为栅格图片', 415)
+  }
+  return { cover_file_id: fileId }
+}
+
 async function validateRemoteScoreFile(supabase: TeachingClient, user: TeachingProfile, page: ScorePage): Promise<string> {
   const fileId = page.file_id
   if (!fileId) throw new ApiError('请上传有效的琴谱文件')
@@ -162,17 +185,19 @@ export async function validateFileReference(supabase: TeachingClient, user: Teac
 export async function canAccessTeachingFile(supabase: TeachingClient, user: TeachingProfile, fileId: string): Promise<boolean> {
   let records = supabase.from('practice_records').select('id').eq('audio_file_id', fileId)
   if (user.role !== 'teacher') records = records.eq('user_id', user.id)
-  const [scores, pageScores, practice, musicians] = await Promise.all([
+  const [scores, pageScores, coverScores, practice, musicians] = await Promise.all([
     supabase.from('scores').select('*').eq('file_id', fileId),
-    supabase.from('scores').select('*').contains('pages', [{ file_id: fileId }]), records.limit(1),
+    supabase.from('scores').select('*').contains('pages', [{ file_id: fileId }]),
+    supabase.from('scores').select('*').eq('cover_file_id', fileId), records.limit(1),
     supabase.from('map_musicians').select('id').eq('avatar_file_id', fileId).limit(1),
   ])
   dbCheck(scores.error)
   dbCheck(pageScores.error)
+  dbCheck(coverScores.error)
   dbCheck(practice.error)
   dbCheck(musicians.error)
   if (musicians.data?.length) return true
-  if ([...(scores.data ?? []), ...(pageScores.data ?? [])].some(score => canReadScore(user, score)) || practice.data?.length) return true
+  if ([...(scores.data ?? []), ...(pageScores.data ?? []), ...(coverScores.data ?? [])].some(score => canReadScore(user, score)) || practice.data?.length) return true
 
   let submitted = supabase.from('submissions').select('audio_file_id,video_file_id,practice_record_id')
   if (user.role === 'teacher') {

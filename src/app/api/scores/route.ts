@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { actor, apiRoute, withoutUserId, ApiError, dbCheck, readJson, validateScoreFiles } from '@/lib/teaching-server'
+import { actor, apiRoute, withoutUserId, ApiError, dbCheck, readJson, validateScoreCover, validateScoreFiles } from '@/lib/teaching-server'
 import { canReadScore, scoreSchema } from '@/lib/teaching-validation'
 import { refreshScoreFiles } from '@/lib/teaching-files'
 import { getScorePages, type ScoreFiles } from '@/lib/score-pages'
@@ -10,6 +10,7 @@ function savedIntent(score: ScoreIntent): string {
   return JSON.stringify({
     title: score.title, composer: score.composer, category: score.category,
     score_type: score.score_type ?? null, period: score.period ?? null, tips: score.tips ?? null, published: score.published,
+    cover_file_id: score.cover_file_id ?? null,
     target_classes: [...new Set(score.target_classes ?? [])].sort(),
     pages: getScorePages(score).map(page => ({ file_id: page.file_id ?? null, image_url: page.file_id ? null : page.image_url ?? null, file_name: page.file_name ?? null, file_type: page.file_type ?? null })),
   })
@@ -50,19 +51,21 @@ export async function POST(request: Request) {
           const queued = await supabase.from('practice_list').upsert({ user_id: user.id, score_id: existing.data.id }, { onConflict: 'user_id,score_id', ignoreDuplicates: true })
           dbCheck(queued.error)
         }
-        return NextResponse.json(existing.data)
+        return NextResponse.json((await refreshScoreFiles([existing.data]))[0])
       }
     }
     const published = user.role === 'teacher' && body.published
     const files = await validateScoreFiles(supabase, user, body)
+    const cover = await validateScoreCover(supabase, user, body)
     if (published && !files.pages.length) throw new ApiError('发布前请上传琴谱文件')
     const values = withoutUserId(body)
-    const { data, error } = await supabase.from('scores').insert({ ...values, ...files, difficulty: 'beginner', published, target_classes: user.role === 'teacher' ? body.target_classes : [], source: user.role, owner_id: user.id }).select('*').single()
+    Reflect.deleteProperty(values, 'cover_receipt')
+    const { data, error } = await supabase.from('scores').insert({ ...values, ...files, ...cover, difficulty: 'beginner', published, target_classes: user.role === 'teacher' ? body.target_classes : [], source: user.role, owner_id: user.id }).select('*').single()
     dbCheck(error)
     if (user.role === 'student') {
       const queued = await supabase.from('practice_list').upsert({ user_id: user.id, score_id: data.id }, { onConflict: 'user_id,score_id', ignoreDuplicates: true })
       dbCheck(queued.error)
     }
-    return NextResponse.json(data, { status: 201 })
+    return NextResponse.json((await refreshScoreFiles([data]))[0], { status: 201 })
   })
 }

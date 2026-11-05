@@ -23,12 +23,15 @@ export interface TeachingScore {
   file_name: string | null
   file_type: string | null
   pages?: ScorePage[]
+  cover_file_id?: string | null
+  cover_url?: string | null
   published: boolean
   target_classes?: string[]
   source: 'teacher' | 'student'
   owner_id: string | null
   created_at: string
 }
+export type TaskScoreSummary = Pick<TeachingScore, 'id' | 'title' | 'composer' | 'cover_file_id' | 'cover_url'>
 export type SubmissionRequirement = 'required' | 'optional' | 'off'
 export interface SubmissionRequirements { audio: SubmissionRequirement; record: SubmissionRequirement; video: SubmissionRequirement }
 export interface PracticeTask {
@@ -43,6 +46,7 @@ export interface PracticeTask {
   score_mode: 'fixed' | 'random'
   score_id: string | null
   assigned_score_id?: string | null
+  score?: TaskScoreSummary | null
   requirements: SubmissionRequirements
   closed: boolean
   teacher_id: string

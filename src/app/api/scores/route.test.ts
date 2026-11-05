@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, rename, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, test } from 'node:test'
 import { AUTH_SESSION_COOKIE, signAuthToken } from '@/lib/auth-session'
 import { createLocalDatabaseClient } from '@/lib/local-database'
-import { getLocalFileUrl, saveLocalFile, serveLocalFile } from '@/lib/local-files'
+import { deleteLocalFile, getLocalFileUrl, localFileMetadata, saveLocalFile, serveLocalFile } from '@/lib/local-files'
+import { createScoreUploadReceipt } from '@/lib/score-upload-receipt'
 import { GET as listScores, POST as createScore } from './route'
 import { GET as readScore, PATCH as editScore, DELETE as deleteScore } from './[id]/route'
 import { GET as listPractice } from '../practice-list/route'
@@ -21,7 +22,7 @@ import type { ScorePage, TeachingScore } from '@/lib/teaching-types'
 const teacher = 't0000000-0000-0000-0000-000000000001'
 const student = 's0000000-0000-0000-0000-000000000001'
 const other = 's0000000-0000-0000-0000-000000000002'
-const keys = ['ZHIYIN_DATA_DIR', 'ZHIYIN_STORAGE_MODE', 'ZHIYIN_SESSION_SECRET', 'ZHIYIN_STUDENT_TEST_MODE'] as const
+const keys = ['ZHIYIN_DATA_DIR', 'ZHIYIN_STORAGE_MODE', 'ZHIYIN_SESSION_SECRET', 'ZHIYIN_STUDENT_TEST_MODE', 'CODER_CODING_API_KEY', 'CODER_CODING_BASE_URL'] as const
 let original: Record<string, string | undefined>
 let directory: string
 beforeEach(async () => {
@@ -60,6 +61,123 @@ async function pageFile(userId: string, type = 'image/png'): Promise<ScorePage> 
   return { file_id: file.fileId, image_url: null, file_name: file.name, file_type: 'image/png' }
 }
 const scoreBody = (pages: ScorePage[]) => ({ user_id: student, title: '多页曲谱', composer: '自选', category: 'domestic', difficulty: 'beginner', pages })
+
+const coverPng = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010804000000b51c0c020000000b4944415478da6364f80f00010501012718e3660000000049454e44ae426082', 'hex')
+const coverFile = (ownerId: string) => saveLocalFile(coverPng, '曲目封面.png', 'image/png', ownerId)
+
+test('independent score covers persist, renew in every score response and participate in retry identity', async () => {
+  createLocalDatabaseClient()
+  const page = await pageFile(student)
+  const cover = await coverFile(student)
+  const body = { ...scoreBody([page]), id: 'c0000000-0000-4000-8000-000000000001', cover_file_id: cover.fileId, cover_url: 'https://untrusted.invalid/cover.png', cover_receipt: 'not-needed-for-local-file' }
+  const response = await createScore(await request('/api/scores', student, body))
+  assert.equal(response.status, 201, await response.clone().text())
+  const created = await response.json() as TeachingScore
+  assert.equal(created.cover_file_id, cover.fileId)
+  assert.match(created.cover_url ?? '', /^\/api\/files\//)
+  assert.equal(created.file_id, page.file_id)
+  assert.deepEqual(created.pages?.map(item => item.file_id), [page.file_id])
+  for (const result of [await readScore(await request(`/api/scores/${created.id}`, student), context(created.id)), await listScores(await request('/api/scores', student)), await listPractice(await request('/api/practice-list', student))]) {
+    const value = await result.json() as TeachingScore | TeachingScore[]
+    const row = Array.isArray(value) ? value.find(item => item.id === created.id) : value
+    assert.equal(row?.cover_file_id, cover.fileId)
+    assert.match(row?.cover_url ?? '', /^\/api\/files\//)
+  }
+  const retried = await createScore(await request('/api/scores', student, { ...body, cover_url: '/expired-client-preview' }))
+  assert.equal(retried.status, 200)
+  assert.match((await retried.json() as TeachingScore).cover_url ?? '', /^\/api\/files\//)
+  const changedCover = await coverFile(student)
+  assert.equal((await createScore(await request('/api/scores', student, { ...body, cover_file_id: changedCover.fileId }))).status, 409)
+  const stored = await createLocalDatabaseClient().from('scores').select('*').eq('id', created.id).single()
+  assert.ok(stored.data && !Array.isArray(stored.data))
+  assert.equal('cover_url' in stored.data, false)
+  assert.equal('cover_receipt' in stored.data, false)
+})
+
+test('cover downloads obey the associated score class, publication and private-owner rules', async () => {
+  const db = createLocalDatabaseClient()
+  const cover = await coverFile(teacher)
+  const response = await createScore(await request('/api/scores', teacher, { ...scoreBody([await pageFile(teacher)]), user_id: teacher, cover_file_id: cover.fileId, published: true, target_classes: ['钢琴二班'] }))
+  assert.equal(response.status, 201)
+  const created = await response.json() as TeachingScore
+  const url = await getLocalFileUrl(cover.fileId)
+  const download = async (userId: string) => downloadFile(await request(url.url, userId), context(cover.fileId.slice(6)))
+  assert.equal((await download(student)).status, 404)
+  assert.equal((await renewFile(await request(`/api/upload?file_id=${encodeURIComponent(cover.fileId)}`, student))).status, 404)
+  await db.from('profiles').update({ class_name: '钢琴二班' }).eq('id', student)
+  assert.equal((await download(student)).status, 200)
+  await db.from('scores').update({ published: false }).eq('id', created.id)
+  assert.equal((await download(student)).status, 404)
+  const privateCover = await coverFile(student)
+  const personalResponse = await createScore(await request('/api/scores', student, { ...scoreBody([await pageFile(student)]), cover_file_id: privateCover.fileId }))
+  assert.equal(personalResponse.status, 201)
+  const privateUrl = await getLocalFileUrl(privateCover.fileId)
+  assert.equal((await downloadFile(await request(privateUrl.url, teacher), context(privateCover.fileId.slice(6)))).status, 404)
+  assert.equal((await downloadFile(await request(privateUrl.url, other), context(privateCover.fileId.slice(6)))).status, 404)
+})
+
+test('score covers reject foreign files, private recordings, fake raster bytes and general remote receipts', async () => {
+  createLocalDatabaseClient()
+  const base = scoreBody([await pageFile(student)])
+  const foreign = await coverFile(other)
+  const audio = await ownFile(student, 'audio/webm')
+  const fake = await saveLocalFile(Buffer.from('<svg/>'), 'fake.png', 'image/png', student)
+  for (const file of [foreign, audio, fake]) {
+    assert.ok((await createScore(await request('/api/scores', student, { ...base, cover_file_id: file.fileId }))).status >= 400)
+  }
+  const remote = 'remote-score-cover'
+  const generalReceipt = createScoreUploadReceipt({ fileId: remote, ownerId: student, fileType: 'image/png' })
+  assert.equal((await createScore(await request('/api/scores', student, { ...base, cover_file_id: remote, cover_receipt: generalReceipt }))).status, 403)
+  delete process.env.CODER_CODING_API_KEY
+  delete process.env.CODER_CODING_BASE_URL
+  const receipt = createScoreUploadReceipt({ fileId: remote, ownerId: student, fileType: 'image/png', purpose: 'score-cover' })
+  const valid = await createScore(await request('/api/scores', student, { ...base, cover_file_id: remote, cover_receipt: receipt }))
+  assert.equal(valid.status, 201, await valid.clone().text())
+  const saved = await valid.json() as TeachingScore
+  assert.equal(saved.cover_file_id, remote)
+  assert.equal(saved.cover_url, null)
+})
+
+test('cover replacement preserves shared references, omitted fields stay unchanged and missing covers never hide scores', async () => {
+  createLocalDatabaseClient()
+  const cover = await coverFile(student)
+  const body = { ...scoreBody([await pageFile(student)]), cover_file_id: cover.fileId }
+  const first = await (await createScore(await request('/api/scores', student, body))).json() as TeachingScore
+  const second = await (await createScore(await request('/api/scores', student, body))).json() as TeachingScore
+  const titleOnly = await editScore(await request(`/api/scores/${first.id}`, student, { user_id: student, title: '只改曲名' }), context(first.id))
+  assert.equal((await titleOnly.json() as TeachingScore).cover_file_id, cover.fileId)
+  const cleared = await editScore(await request(`/api/scores/${first.id}`, student, { user_id: student, cover_file_id: null }), context(first.id))
+  assert.equal(cleared.status, 200)
+  assert.equal((await cleared.json() as TeachingScore).cover_file_id, null)
+  assert.equal((await localFileMetadata(cover.fileId)).type, 'image/png')
+  assert.equal((await deleteScore(await request(`/api/scores/${second.id}`, student), context(second.id))).status, 200)
+  await assert.rejects(localFileMetadata(cover.fileId))
+  const missing = await coverFile(student)
+  const third = await (await createScore(await request('/api/scores', student, { ...body, cover_file_id: missing.fileId }))).json() as TeachingScore
+  await deleteLocalFile(missing.fileId)
+  const result = await readScore(await request(`/api/scores/${third.id}`, student), context(third.id))
+  assert.equal(result.status, 200)
+  assert.equal((await result.json() as TeachingScore).cover_url, null)
+  const edited = await editScore(await request(`/api/scores/${third.id}`, student, { user_id: student, title: '封面丢失也可改曲名' }), context(third.id))
+  assert.equal(edited.status, 200)
+  assert.equal((await edited.json() as TeachingScore).cover_file_id, missing.fileId)
+})
+
+test('a saved cover removal reports cleanup failure without failing or repeating the score update', async () => {
+  createLocalDatabaseClient()
+  const cover = await coverFile(student)
+  const created = await (await createScore(await request('/api/scores', student, { ...scoreBody([await pageFile(student)]), cover_file_id: cover.fileId }))).json() as TeachingScore
+  const metadata = path.join(directory, 'uploads', `${cover.fileId.slice(6)}.json`)
+  await rename(metadata, `${metadata}.backup`)
+  await mkdir(metadata)
+  const response = await editScore(await request(`/api/scores/${created.id}`, student, { user_id: student, cover_file_id: null }), context(created.id))
+  assert.equal(response.status, 200, await response.clone().text())
+  const saved = await response.json() as TeachingScore & { warning?: string }
+  assert.equal(saved.cover_file_id, null)
+  assert.equal(saved.cover_url, null)
+  assert.match(saved.warning ?? '', /已保存.*封面.*清理失败/)
+  assert.deepEqual((await createLocalDatabaseClient().from('scores').select('cover_file_id').eq('id', created.id).single()).data, { cover_file_id: null })
+})
 
 test('teacher classification saves and publishes without legacy difficulty or genre and filters by type and period', async () => {
   createLocalDatabaseClient()

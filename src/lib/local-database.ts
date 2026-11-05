@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS scores (
   id TEXT PRIMARY KEY, title TEXT NOT NULL, composer TEXT NOT NULL,
   difficulty TEXT NOT NULL CHECK(difficulty IN ('beginner','intermediate','advanced')),
   score_type TEXT, period TEXT,
+  cover_file_id TEXT,
   category TEXT NOT NULL DEFAULT 'foreign' CHECK(category IN ('domestic','foreign')),
   genre_id TEXT REFERENCES score_genres(id) ON DELETE RESTRICT,
   published INTEGER NOT NULL DEFAULT 0 CHECK(published IN (0,1)), tips TEXT, image_url TEXT,
@@ -159,6 +160,7 @@ function openDatabase(file: string): DatabaseSync {
     db.exec('BEGIN IMMEDIATE')
     db.exec(schema)
     const scoreColumns = db.prepare('PRAGMA table_info(scores)').all()
+    if (!scoreColumns.some(column => column.name === 'cover_file_id')) db.exec('ALTER TABLE scores ADD COLUMN cover_file_id TEXT')
     if (!scoreColumns.some(column => column.name === 'score_type')) db.exec('ALTER TABLE scores ADD COLUMN score_type TEXT')
     if (!scoreColumns.some(column => column.name === 'period')) db.exec('ALTER TABLE scores ADD COLUMN period TEXT')
     if (!scoreColumns.some(column => column.name === 'target_classes')) db.exec("ALTER TABLE scores ADD COLUMN target_classes TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(target_classes))")

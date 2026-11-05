@@ -62,6 +62,13 @@ test('avatar uploads require a teacher and matching raster bytes before issuing 
     assert.equal(verifyScoreUploadReceipt(general.receipt, { fileId: general.fileId, ownerId: student }), 'image/png')
     assert.equal(verifyScoreUploadReceipt(general.receipt, { fileId: general.fileId, ownerId: student, purpose: 'map-avatar' }), null)
     assert.equal(uploads, 2)
+    assert.equal((await upload(student, Buffer.from('<svg/>'), 'image/png', 'score-cover')).status, 415)
+    const coverResponse = await upload(student, png, 'image/png', 'score-cover')
+    assert.equal(coverResponse.status, 200, await coverResponse.clone().text())
+    const cover = await coverResponse.json() as { fileId: string; receipt: string }
+    assert.equal(verifyScoreUploadReceipt(cover.receipt, { fileId: cover.fileId, ownerId: student, purpose: 'score-cover' }), 'image/png')
+    assert.equal(verifyScoreUploadReceipt(general.receipt, { fileId: general.fileId, ownerId: student, purpose: 'score-cover' }), null)
+    assert.equal(verifyScoreUploadReceipt(avatar.receipt, { fileId: avatar.fileId, ownerId: teacher, purpose: 'score-cover' }), null)
   } finally {
     await new Promise<void>(resolve => server.close(() => resolve()))
     for (const key of keys) {

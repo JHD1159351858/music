@@ -67,6 +67,19 @@ test('existing single-file scores survive the additive page column migration', a
   assert.deepEqual(migrated.data, { id: 'legacy-score', file_id: 'old-file', pages: [] })
 })
 
+test('old scores gain an empty independent cover reference without replacing pages or teaching scope', async () => {
+  const client = createLocalDatabaseClient()
+  await client.from('scores').insert({ id: 'legacy-cover', title: '原琴谱', composer: '作者', difficulty: 'advanced', source: 'teacher', owner_id: teacher, published: true, target_classes: ['原班级'], file_id: 'original-page', pages: [{ file_id: 'original-page' }] })
+  const legacy = new DatabaseSync(localDatabasePath())
+  if (legacy.prepare('PRAGMA table_info(scores)').all().some(column => column.name === 'cover_file_id')) legacy.exec('ALTER TABLE scores DROP COLUMN cover_file_id')
+  legacy.close()
+  for (let opening = 0; opening < 2; opening++) {
+    const reopened = await createLocalDatabaseClient().from('scores').select('id,cover_file_id,file_id,pages,published,target_classes').eq('id', 'legacy-cover').single()
+    assert.equal(reopened.error, null)
+    assert.deepEqual(reopened.data, { id: 'legacy-cover', cover_file_id: null, file_id: 'original-page', pages: [{ file_id: 'original-page' }], published: true, target_classes: ['原班级'] })
+  }
+})
+
 test('legacy scores gain unset classification fields without changing old values or related rows', async () => {
   const client = createLocalDatabaseClient()
   await client.from('score_genres').insert({ id: 'legacy-genre', name: '旧曲风', teacher_id: teacher })

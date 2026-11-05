@@ -21,6 +21,8 @@ export const scoreSchema = userIdSchema.extend({
   period: z.string().trim().min(1).max(SCORE_PERIOD_MAX_LENGTH).nullable().optional(),
   tips: nullableText, image_url: nullableUrl,
   file_id: nullableText, file_name: nullableText, file_type: nullableText,
+  cover_file_id: z.string().trim().min(1).max(5000).nullable().optional(),
+  cover_receipt: z.string().trim().min(1).max(10000).nullable().optional(),
   pages: z.array(scorePageSchema).max(50, '每份琴谱最多上传 50 页').optional(),
   published: z.boolean().default(false),
   target_classes: z.array(text).max(100).default([]),
