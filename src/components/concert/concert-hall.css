@@ -6,7 +6,6 @@
   color: var(--foreground);
 }
 
-.concert-student-map { --concert-sidebar-width: 11rem; }
 .concert-mobile-header { display: none; }
 .concert-sidebar {
   position: fixed;
@@ -37,6 +36,7 @@
 .concert-main[data-module='community'] { --concert-module-background: url('/backgrounds/piano/community.png'); }
 .concert-main[data-module='map'] { --concert-module-background: url('/backgrounds/piano/map.png'); }
 .concert-main[data-module='stats'] { --concert-module-background: url('/backgrounds/piano/stats.png'); }
+.concert-main[data-background='failed'] { --concert-module-background: none; }
 .concert-main::before {
   content: '';
   position: fixed;

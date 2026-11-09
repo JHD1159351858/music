@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { BarChart3, BookOpen, ClipboardList, FileMusic, House, LogOut, Map, MessagesSquare, Music2, UserRound } from 'lucide-react'
 import { useUser } from '@/lib/user-context'
 import { UserProfile } from '@/components/auth/user-profile'
@@ -23,7 +23,23 @@ export function StudentShell({ children, onNavigate }: { children: React.ReactNo
   const router = useRouter()
   const { user, logout } = useUser()
   const [error, setError] = useState('')
+  const [backgrounds, setBackgrounds] = useState<Record<string, 'ready' | 'failed'>>({})
+  const modulePath = `/${pathname.split('/')[1]}`
+  const background = navigation.some(item => item.href !== '/' && item.href === modulePath) ? `/backgrounds/piano${modulePath}.png` : null
+  const backgroundState = background ? backgrounds[background] : 'ready'
   const isMap = pathname === '/map'
+  useEffect(() => {
+    if (!background || backgroundState) return
+    let active = true
+    const image = new window.Image()
+    image.fetchPriority = 'high'
+    image.src = background
+    const finish = (state: 'ready' | 'failed') => {
+      if (active) setBackgrounds(current => ({ ...current, [background]: state }))
+    }
+    void image.decode().then(() => finish('ready'), () => finish('failed'))
+    return () => { active = false }
+  }, [background, backgroundState])
   useLayoutEffect(() => {
     const wasDark = document.documentElement.classList.contains('dark')
     document.documentElement.classList.remove('dark')
@@ -51,6 +67,6 @@ export function StudentShell({ children, onNavigate }: { children: React.ReactNo
       </div>
     </aside>
     <header className="concert-mobile-header"><Link href="/" className="flex items-center gap-2 font-serif text-lg"><Music2 className="size-5 text-primary" />知音</Link><div className="flex items-center gap-1">{user ? <><UserProfile user={user}><button aria-label="我的资料" className="grid size-11 place-items-center text-muted-foreground"><UserRound className="size-5" /></button></UserProfile><button aria-label="退出登录" onClick={() => void leave()} className="grid size-11 place-items-center text-muted-foreground"><LogOut className="size-5" /></button></> : <button onClick={login} className="min-h-11 text-sm text-primary">登录课堂</button>}</div>{error && <p role="alert" className="basis-full text-xs text-destructive">{error}</p>}</header>
-    <main className="concert-main" data-module={pathname.split('/')[1]}><div className="concert-content">{children}</div></main>
+    <main className="concert-main" data-module={pathname.split('/')[1]} data-background={backgroundState} aria-busy={!backgroundState}><div className="concert-content">{backgroundState ? children : <div role="status" className="grid min-h-[50dvh] place-items-center text-sm text-muted-foreground">正在准备页面…</div>}</div></main>
   </div>
 }
