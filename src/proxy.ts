@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { readAuthSession, requestOrigin, validRequestOrigin } from '@/lib/auth-session'
+import { isGuestModulePath } from '@/lib/guest-modules'
 
 export async function proxy(request: NextRequest) {
   const origin = requestOrigin(request)
@@ -8,6 +9,7 @@ export async function proxy(request: NextRequest) {
   const api = pathname.startsWith('/api/')
   const session = await readAuthSession(request).catch(() => null)
   if (!session) {
+    if (['GET', 'HEAD'].includes(request.method) && isGuestModulePath(pathname)) return NextResponse.next()
     if (api) return NextResponse.json({ error: '请先登录' }, { status: 401, headers: { 'Cache-Control': 'no-store' } })
     const redirect = new URL('/', origin)
     redirect.searchParams.set('login', '1')

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import { useRouter } from 'next/navigation'
 import { BookOpen, ClipboardCheck, FolderArchive, GraduationCap, Map, MessagesSquare, Music, Pause, Play, Sparkles, Timer, UserRound } from 'lucide-react'
 import { useUser, type DemoUser } from '@/lib/user-context'
+import { isGuestModulePath } from '@/lib/guest-modules'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ChatPanel } from '@/components/chat-panel'
@@ -122,7 +123,7 @@ export default function LandingPage() {
 
   function navigate(href: string) {
     if (loading) return
-    if (user) router.push(href)
+    if (user || isGuestModulePath(href.split('?')[0])) router.push(href)
     else chooseIdentity(href)
   }
 
