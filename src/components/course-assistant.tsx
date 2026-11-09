@@ -49,6 +49,7 @@ function CourseMaterials() {
 
 function StudentAssistant() {
   const pathname = usePathname()
+  const inPractice = pathname.startsWith('/practice/session/')
   const [open, setOpen] = useState(false)
   const [visited, setVisited] = useState(false)
   const [motion, setMotion] = useState<'running' | 'paused' | 'reduced'>('running')
@@ -95,14 +96,14 @@ function StudentAssistant() {
   }, [open])
 
   return <>
-    <div className={`concert-assistant fixed right-4 bottom-24 z-50 md:right-6 ${pathname.startsWith('/practice/session/') ? 'md:bottom-28' : 'md:bottom-6'}`} data-motion={open || motion !== 'running' ? 'paused' : 'running'}>
+    <div className={`concert-assistant course-assistant-dock fixed right-4 bottom-24 z-50 md:right-6 ${inPractice ? 'md:bottom-28' : 'md:bottom-6'}`} data-practice={inPractice ? '' : undefined} data-motion={open || motion !== 'running' ? 'paused' : 'running'}>
     <Button ref={triggerRef} aria-label="打开知音课程助手" aria-expanded={open} aria-controls="course-assistant" onClick={() => { setVisited(true); setOpen(value => !value) }} className="course-assistant-trigger h-20 gap-3 rounded-full border border-primary/50 bg-card px-5 text-foreground shadow-lg hover:bg-muted md:h-24 md:px-6">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/home/journey-robot.png" alt="" className="course-assistant-robot h-16 w-14 object-contain md:h-20 md:w-16" width={64} height={80} /><span className="text-base font-semibold md:text-lg">问知音</span>
     </Button>
     <Button variant="ghost" size="icon" className="absolute -right-1 -top-1 size-7 rounded-full border border-primary/30 bg-card text-muted-foreground hover:bg-muted" aria-label={motion === 'reduced' ? '系统已减少动态效果' : motion === 'running' ? '暂停知音动效' : '开启动效'} title={motion === 'reduced' ? '系统已开启减少动态效果' : motion === 'running' ? '暂停知音动效' : '开启动效'} aria-pressed={motion !== 'running'} disabled={motion === 'reduced'} onClick={() => setMotion(current => current === 'running' ? 'paused' : 'running')}>{motion === 'running' ? <Pause className="size-3.5" /> : <Play className="size-3.5" />}</Button>
     </div>
-    {visited && <section id="course-assistant" role="dialog" aria-modal="false" aria-labelledby="course-assistant-title" aria-describedby="course-assistant-description" className={`concert-assistant ${open ? 'flex' : 'hidden'} fixed right-3 bottom-48 z-50 h-[min(620px,calc(100dvh-13rem))] w-[min(420px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-primary/30 bg-background shadow-xl md:right-6 md:bottom-36 md:h-[min(640px,calc(100dvh-10rem))]`}>
+    {visited && <section id="course-assistant" role="dialog" aria-modal="false" aria-labelledby="course-assistant-title" aria-describedby="course-assistant-description" data-practice={inPractice ? '' : undefined} className={`concert-assistant course-assistant-popover ${open ? 'flex' : 'hidden'} fixed right-3 bottom-48 z-50 h-[min(620px,calc(100dvh-13rem))] w-[min(420px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-primary/30 bg-background shadow-xl md:right-6 md:bottom-36 md:h-[min(640px,calc(100dvh-10rem))]`}>
       <header className="flex items-center justify-between gap-3 border-b border-border bg-card px-4 py-3"><div className="flex min-w-0 items-center gap-3"><span aria-hidden className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/40 bg-primary/5"><Image src="/home/journey-robot.png" alt="" width={32} height={40} className="h-10 w-8 object-contain" /></span><div><h2 id="course-assistant-title" className="font-serif text-lg text-primary">知音课程助手</h2><p id="course-assistant-description" className="mt-1 text-xs text-muted-foreground">查阅课程资料，随时提问；未收录内容会提示超出范围。</p></div></div><Button ref={closeRef} variant="ghost" size="icon" aria-label="收起知音课程助手" onClick={close}><X className="size-4" /></Button></header>
       <Tabs defaultValue="chat" className="min-h-0 flex-1 gap-3 p-3">
         <TabsList className="w-full"><TabsTrigger className="flex-1" value="chat">课程答疑</TabsTrigger><TabsTrigger className="flex-1" value="materials">课程资料</TabsTrigger></TabsList>

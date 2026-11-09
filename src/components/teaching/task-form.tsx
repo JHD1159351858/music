@@ -97,7 +97,7 @@ export function TaskForm({ userId, task, scores, students, embedded = false, onC
   const form = <form className="space-y-5" onSubmit={submit}>
           <div className="space-y-2"><Label htmlFor="task-title">任务名称</Label><Input id="task-title" required maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：本周音阶与琶音练习" /></div>
           <div className="space-y-2"><Label htmlFor="task-description">练习要求</Label><Textarea id="task-description" required rows={3} maxLength={10000} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="写明练习重点、速度与提交说明" /></div>
-          <div className={embedded ? 'grid gap-4' : 'grid gap-4 sm:grid-cols-2'}>
+          <div className={embedded ? 'grid gap-4 md:max-xl:grid-cols-2' : 'grid gap-4 sm:grid-cols-2'}>
             <div className="space-y-2"><Label htmlFor="task-start">开始时间</Label><Input id="task-start" type="datetime-local" required value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /></div>
             <div className="space-y-2"><Label htmlFor="task-end">截止时间</Label><Input id="task-end" type="datetime-local" required value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></div>
           </div>
@@ -116,5 +116,5 @@ export function TaskForm({ userId, task, scores, students, embedded = false, onC
           <Button type="submit" className="w-full" disabled={saving || (scoreMode === 'fixed' && !availableScores.some((score) => score.id === scoreId))}>{saving ? '保存中…' : task ? '保存修改' : '发布任务'}</Button>
         </form>
   if (embedded) return <section className="max-h-[calc(100dvh-10rem)] overflow-y-auto"><div className="mb-4 flex items-start justify-between gap-3"><div><h2 className="font-serif text-xl">{task ? '编辑练习任务' : '发布练习任务'}</h2><p className="mt-1 text-sm text-muted-foreground">设置任务时间、面向范围、练习曲目与提交要求。</p></div><Button type="button" variant="ghost" size="sm" disabled={saving} onClick={onClose}>取消</Button></div>{form}</section>
-  return <Dialog open onOpenChange={(open) => { if (!open && !saving) onClose() }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>{task ? '编辑练习任务' : '发布练习任务'}</DialogTitle><DialogDescription>设置任务时间、面向范围、练习曲目与提交要求。</DialogDescription></DialogHeader>{form}</DialogContent></Dialog>
+  return <Dialog open onOpenChange={(open) => { if (!open && !saving) onClose() }}><DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>{task ? '编辑练习任务' : '发布练习任务'}</DialogTitle><DialogDescription>设置任务时间、面向范围、练习曲目与提交要求。</DialogDescription></DialogHeader>{form}</DialogContent></Dialog>
 }

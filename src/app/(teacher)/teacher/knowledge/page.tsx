@@ -1,12 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { BookOpen, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRequireUser } from '@/lib/user-context'
 import type { CourseKnowledge } from '@/lib/course-knowledge'
 import { errorMessage, jsonBody, teachingApi, teachingDate } from '@/components/teaching/api'
 import { AdminNotice, AdminPageHeader, AdminTable, type AdminColumn } from '@/components/teacher/admin-table'
+import { revealStackedAdminPanel } from '@/components/teacher/detail-workspaces'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,6 +23,7 @@ export default function TeacherKnowledgePage() {
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const panel = useRef<HTMLElement>(null)
   const [editing, setEditing] = useState<CourseKnowledge | null | undefined>(undefined)
   const [form, setForm] = useState(EMPTY_FORM)
   const [busy, setBusy] = useState(false)
@@ -37,6 +39,7 @@ export default function TeacherKnowledgePage() {
   function edit(entry: CourseKnowledge | null) {
     setEditing(entry)
     setForm(entry ? { title: entry.title, content: entry.content, keywords: entry.keywords.join('，'), source_url: entry.source_url ?? '' } : EMPTY_FORM)
+    revealStackedAdminPanel(panel.current)
   }
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -75,7 +78,7 @@ export default function TeacherKnowledgePage() {
         <div className="teacher-detail-toolbar"><Input aria-label="搜索课程知识" className="max-w-sm" placeholder="搜索标题、正文或关键词" value={search} onChange={event => setSearch(event.target.value)} /></div>
         {error ? <AdminNotice message={error} onRetry={() => void load()} /> : <AdminTable rows={rows} columns={columns} rowKey={entry => entry.id} emptyText={loading ? '正在读取课程知识…' : '暂无符合条件的知识条目'} />}
       </section>
-      <aside className="teacher-detail-panel teacher-knowledge-editor" aria-labelledby="knowledge-panel-title">
+      <aside ref={panel} className="teacher-detail-panel teacher-knowledge-editor" aria-labelledby="knowledge-panel-title">
         <header><div><h2 id="knowledge-panel-title">{editing === undefined ? '知识详情与编辑' : editing ? '编辑课程知识' : '新增课程知识'}</h2><p className="mt-1 text-xs leading-relaxed text-muted-foreground">填写知识正文、检索关键词和可选参考来源。</p></div>{editing !== undefined && <Button variant="ghost" size="icon" aria-label="收起知识编辑" disabled={busy} onClick={() => setEditing(undefined)}><X className="size-4" /></Button>}</header>
         {editing === undefined ? <div className="teacher-detail-empty"><BookOpen className="mb-4 size-7 text-primary" /><p>选择左侧知识条目，查看并编辑正文、关键词与参考链接。</p><Button className="mt-4" variant="outline" onClick={() => edit(null)}>新增课程知识</Button></div> : <form className="space-y-4" onSubmit={save}>
           <div className="space-y-2"><Label htmlFor="knowledge-title">知识标题</Label><Input id="knowledge-title" required maxLength={160} value={form.title} onChange={event => setForm({ ...form, title: event.target.value })} /></div>

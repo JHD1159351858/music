@@ -1,12 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Download, MessagesSquare, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRequireUser } from '@/lib/user-context'
 import { lessonFocusText } from '@/lib/community-export'
 import { errorMessage, jsonBody, teachingApi, teachingDate } from '@/components/teaching/api'
 import { AdminNotice, AdminPageHeader, AdminTable, type AdminColumn } from '@/components/teacher/admin-table'
+import { revealStackedAdminPanel } from '@/components/teacher/detail-workspaces'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -48,6 +49,7 @@ export default function TeacherCommunityPage() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const panel = useRef<HTMLElement>(null)
   const [selected, setSelected] = useState<Post | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
   const [commentsLoading, setCommentsLoading] = useState(false)
@@ -80,6 +82,10 @@ export default function TeacherCommunityPage() {
     void teachingApi<Comment[]>(`/api/comments?post_id=${encodeURIComponent(selectedId)}`).then(list => { if (active) setComments(list) }).catch((cause: unknown) => { if (active) setCommentsError(errorMessage(cause)) }).finally(() => { if (active) setCommentsLoading(false) })
     return () => { active = false }
   }, [selectedId, commentsRevision])
+  function openThread(post: Post) {
+    setSelected(post)
+    revealStackedAdminPanel(panel.current)
+  }
   async function toggleMark(post: Post) {
     if (busy) return
     setBusy(true)
@@ -119,12 +125,12 @@ export default function TeacherCommunityPage() {
   const source = view === 'messages' ? messages : view === 'focus' ? focus : view === 'help' ? posts.filter(post => post.ask_teacher) : posts
   const rows = source.filter(post => (category === 'all' || post.category === category) && `${post.title} ${post.content} ${post.profiles?.nickname ?? ''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
   const columns: AdminColumn<Post>[] = [
-    { key: 'title', label: '帖子 / 留言', render: post => <div className="max-w-sm"><button className="text-left font-medium hover:text-primary hover:underline" disabled={busy} aria-pressed={selected?.id === post.id} onClick={() => setSelected(post)}>{post.title}</button><p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{post.content}</p></div> },
+    { key: 'title', label: '帖子 / 留言', render: post => <div className="max-w-sm"><button className="text-left font-medium hover:text-primary hover:underline" disabled={busy} aria-pressed={selected?.id === post.id} onClick={() => openThread(post)}>{post.title}</button><p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{post.content}</p></div> },
     { key: 'student', label: '发布昵称', render: post => post.profiles?.nickname ?? '未命名用户' },
     { key: 'category', label: '分类 / 来源', render: post => <div className="space-y-1"><p>{CATEGORY_LABEL[post.category] ?? post.category}</p><Badge variant="secondary">{post.recipient_teacher_id ? '私密留言' : post.ask_teacher ? '求助教师' : '社区帖子'}</Badge></div> },
     { key: 'date', label: '发布时间', render: post => teachingDate(post.created_at) },
     { key: 'mark', label: '回课状态', render: post => <Badge variant={post.marked_for_lesson ? 'default' : 'outline'}>{post.marked_for_lesson ? '已加入回课' : '未标记'}</Badge> },
-    { key: 'actions', label: '操作', render: post => <div className="flex flex-wrap gap-1"><Button variant="ghost" size="sm" disabled={busy} onClick={() => setSelected(post)}>查看与回复</Button><Button variant="ghost" size="sm" disabled={busy} onClick={() => void toggleMark(post)}>{post.marked_for_lesson ? '移出回课' : '标记回课'}</Button><Button variant="ghost" size="sm" className="text-destructive" disabled={busy} onClick={() => void remove(post)}>删除</Button></div> },
+    { key: 'actions', label: '操作', render: post => <div className="flex flex-wrap gap-1"><Button variant="ghost" size="sm" disabled={busy} onClick={() => openThread(post)}>查看与回复</Button><Button variant="ghost" size="sm" disabled={busy} onClick={() => void toggleMark(post)}>{post.marked_for_lesson ? '移出回课' : '标记回课'}</Button><Button variant="ghost" size="sm" className="text-destructive" disabled={busy} onClick={() => void remove(post)}>删除</Button></div> },
   ]
   if (user?.role !== 'teacher') return null
   return <div className="teacher-detail-workspace space-y-6">
@@ -136,7 +142,7 @@ export default function TeacherCommunityPage() {
           <div className="teacher-detail-toolbar"><Input aria-label="搜索社区内容" className="w-64" placeholder="搜索标题、正文或学生昵称" value={search} onChange={event => setSearch(event.target.value)} /><Select value={category} onValueChange={setCategory}><SelectTrigger className="w-40" aria-label="社区分类"><SelectValue /></SelectTrigger><SelectContent>{CATEGORIES.map(item => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent></Select></div>
           {error ? <AdminNotice message={error} onRetry={() => void load()} /> : <AdminTable rows={rows} columns={columns} rowKey={post => post.id} emptyText={loading ? '正在读取社区内容…' : '暂无符合条件的内容'} />}
         </section>
-        <aside className="teacher-detail-panel" aria-labelledby="community-panel-title">
+        <aside ref={panel} className="teacher-detail-panel" aria-labelledby="community-panel-title">
           <header><div><h2 id="community-panel-title">{selected?.title ?? '查看与回复'}</h2>{selected && <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{selected.profiles?.nickname} · {teachingDate(selected.created_at)}{selected.recipient_teacher_id ? ' · 师生私密留言' : ''}</p>}</div>{selected && <Button variant="ghost" size="icon" aria-label="收起社区回复" disabled={busy} onClick={() => setSelected(null)}><X className="size-4" /></Button>}</header>
           {selected ? <>
             <p className="whitespace-pre-wrap break-words text-sm leading-7">{selected.content}</p>

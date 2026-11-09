@@ -18,8 +18,9 @@ type Props = PaneControl & (
 )
 type Gesture = { region: ScoreGestureRegion; view: ScoreView; point: Point; distance: number; turning: boolean }
 const TURN_DURATION_MS = 220
-const SCORE_AREA = 'absolute inset-x-[max(1.5rem,5%)] inset-y-6'
-const DUAL_SCORE_AREA = 'absolute inset-x-[clamp(.5rem,1.25vw,1.25rem)] inset-y-6'
+const SCORE_VERTICAL_INSETS = 'inset-y-6 md:max-xl:landscape:top-2 md:max-xl:landscape:bottom-5'
+const SCORE_AREA = `absolute inset-x-[max(1.5rem,5%)] ${SCORE_VERTICAL_INSETS}`
+const DUAL_SCORE_AREA = `absolute inset-x-[clamp(.5rem,1.25vw,1.25rem)] ${SCORE_VERTICAL_INSETS}`
 const SCORE_COLUMNS = 'grid grid-cols-[minmax(0,1fr)_2.75rem_minmax(0,1fr)] grid-rows-1'
 
 function scoreRegion(target: EventTarget | null): ScoreGestureRegion {

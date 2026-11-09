@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRequireUser } from '@/lib/user-context'
@@ -27,6 +27,7 @@ export default function TeacherSemestersPage() {
   const [selected, setSelected] = useState('')
   const [progressSearch, setProgressSearch] = useState('')
   const [progressClass, setProgressClass] = useState('all')
+  const editor = useRef<HTMLElement>(null)
   const [editing, setEditing] = useState<SemesterGoal | null | undefined>(undefined)
   const [form, setForm] = useState({ name: '', start_date: '', end_date: '', target_hours: '10' })
   const load = useCallback(async () => {
@@ -41,6 +42,11 @@ export default function TeacherSemestersPage() {
     finally { setLoading(false) }
   }, [user])
   useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    if (editing !== undefined && window.matchMedia('(min-width: 768px) and (max-width: 1366px)').matches) {
+      editor.current?.scrollIntoView({ block: 'start' })
+    }
+  }, [editing])
   function edit(goal: SemesterGoal | null) {
     if (goal) setSelected(goal.id)
     setEditing(goal)
@@ -92,7 +98,7 @@ export default function TeacherSemestersPage() {
     <AdminPageHeader title="学期目标" description="按学期设置每位学生的练琴目标，并查看累计有效时长与达标进度。" actions={<Button disabled={busy} onClick={() => edit(null)}><Plus className="mr-2 h-4 w-4" />设置学期目标</Button>} />
     <section className="space-y-4" aria-label="学期记录"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold">学期记录</h2><Input className="max-w-sm" aria-label="搜索学期名称" placeholder="搜索学期名称" value={search} onChange={event => setSearch(event.target.value)} /></div>{error ? <AdminNotice message={error} onRetry={() => void load()} /> : <AdminTable rows={goals.filter(goal => goal.name.includes(search.trim()))} columns={columns} rowKey={goal => goal.id} emptyText={loading ? '正在读取学期目标…' : '尚未设置学期目标'} />}</section>
     {current && <section className="space-y-4"><div><h2 className="text-lg font-semibold">{current.name} · 学生完成进度</h2><p className="mt-1 text-sm text-muted-foreground">统计 {current.start_date} 至 {current.end_date}，每人目标 {current.target_minutes / 60} 小时。</p></div><div className="flex flex-wrap gap-3"><Input className="w-56" aria-label="搜索目标学生" placeholder="搜索学生昵称" value={progressSearch} onChange={event => setProgressSearch(event.target.value)} /><Select value={progressClass} onValueChange={setProgressClass}><SelectTrigger className="w-44" aria-label="筛选目标班级"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部班级</SelectItem><SelectItem value="unassigned">未分班</SelectItem>{classes.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}</SelectContent></Select></div><AdminTable rows={progressRows} columns={progressColumns} rowKey={student => student.id} emptyText="暂无符合条件的学生" /></section>}
-    {editing !== undefined && <section className="teacher-detail-panel teacher-semester-editor" aria-labelledby="semester-editor-title"><header><div><h2 id="semester-editor-title">{editing ? '编辑学期目标' : '设置学期目标'}</h2><p className="mt-1 text-xs leading-relaxed text-muted-foreground">目标适用于全体学生，进度按该学期内有效练琴时长计算。</p></div><Button variant="ghost" size="icon" aria-label="收起学期目标编辑" disabled={busy} onClick={() => setEditing(undefined)}><X className="size-4" /></Button></header>
+    {editing !== undefined && <section ref={editor} className="teacher-detail-panel teacher-semester-editor scroll-mt-24" aria-labelledby="semester-editor-title"><header><div><h2 id="semester-editor-title">{editing ? '编辑学期目标' : '设置学期目标'}</h2><p className="mt-1 text-xs leading-relaxed text-muted-foreground">目标适用于全体学生，进度按该学期内有效练琴时长计算。</p></div><Button variant="ghost" size="icon" aria-label="收起学期目标编辑" disabled={busy} onClick={() => setEditing(undefined)}><X className="size-4" /></Button></header>
       <form onSubmit={save}>
         <div className="space-y-2"><Label htmlFor="semester-name">学期名称</Label><Input id="semester-name" required maxLength={200} value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} /></div>
         <div className="space-y-2"><Label htmlFor="semester-start">学期开始</Label><Input id="semester-start" required type="date" value={form.start_date} onChange={event => setForm({ ...form, start_date: event.target.value })} /></div>

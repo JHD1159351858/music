@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Music2, ClipboardList, ClipboardCheck, Users, CalendarRange, BookOpen, MessagesSquare, Timer, Map, House, LogOut, Menu, ChevronRight, GraduationCap } from 'lucide-react'
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
@@ -36,6 +36,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     document.body.dataset.teacherAdmin = 'true'
     return () => { if (previous === undefined) delete document.body.dataset.teacherAdmin; else document.body.dataset.teacherAdmin = previous; if (wasDark) document.documentElement.classList.add('dark') }
   }, [])
+  useEffect(() => {
+    const sidebarLayout = window.matchMedia('(min-width: 80rem), (min-width: 64rem) and (orientation: landscape)')
+    const closeDrawer = () => { if (sidebarLayout.matches) setOpen(false) }
+    sidebarLayout.addEventListener('change', closeDrawer)
+    return () => sidebarLayout.removeEventListener('change', closeDrawer)
+  }, [])
   const active = navigation.find(item => item.href === '/teacher' ? pathname === '/teacher' : pathname.startsWith(item.href))
   const title = active?.label ?? '音乐史地图'
   async function leave() {
@@ -52,13 +58,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     </div>
   }
   return <div className="teacher-admin min-h-screen bg-background font-sans text-foreground">
-    <aside className={cn('fixed inset-y-0 left-0 z-40 hidden lg:block', isMap ? 'w-44' : 'w-60')}>{sidebar()}</aside>
-    <div className={cn('min-w-0', isMap ? 'lg:ml-44' : 'lg:ml-60')}>
-      <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between gap-3 border-b border-border bg-card/95 px-4 shadow-sm backdrop-blur md:px-8">
-        <div className="flex min-w-0 items-center gap-3"><Sheet open={open} onOpenChange={setOpen}><SheetTrigger asChild><Button aria-label="打开管理导航" variant="ghost" size="icon" className="lg:hidden"><Menu className="size-5" /></Button></SheetTrigger><SheetContent side="left" className="teacher-sidebar w-60 border-sidebar-border p-0"><SheetTitle className="sr-only">教师管理导航</SheetTitle><SheetDescription className="sr-only">选择教学管理模块，或返回知音首页。</SheetDescription>{sidebar()}</SheetContent></Sheet><nav aria-label="面包屑" className="flex items-center gap-2 truncate text-sm"><Link href="/teacher" className="hidden text-muted-foreground sm:inline">教师工作台</Link><ChevronRight className="hidden size-3.5 text-muted-foreground sm:block" /><span>{title}</span>{pathname.startsWith('/teacher/tasks/') && <><ChevronRight className="size-3.5 text-muted-foreground" /><span className="text-muted-foreground">任务详情</span></>}</nav></div>
+    <aside className={cn('fixed inset-y-0 left-0 z-40 hidden w-44 lg:landscape:block xl:block', !isMap && 'xl:w-60')}>{sidebar()}</aside>
+    <div className={cn('min-w-0 lg:max-xl:landscape:ml-44', isMap ? 'xl:ml-44' : 'xl:ml-60')}>
+      <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between gap-3 border-b border-border bg-card/95 px-4 shadow-sm backdrop-blur md:px-6 xl:px-8">
+        <div className="flex min-w-0 items-center gap-3"><Sheet open={open} onOpenChange={setOpen}><SheetTrigger asChild><Button aria-label="打开管理导航" variant="ghost" size="icon" className="md:size-11 lg:landscape:hidden xl:hidden"><Menu className="size-5" /></Button></SheetTrigger><SheetContent side="left" className="teacher-sidebar w-60 border-sidebar-border p-0"><SheetTitle className="sr-only">教师管理导航</SheetTitle><SheetDescription className="sr-only">选择教学管理模块，或返回知音首页。</SheetDescription>{sidebar()}</SheetContent></Sheet><nav aria-label="面包屑" className="flex items-center gap-2 truncate text-sm"><Link href="/teacher" className="hidden text-muted-foreground sm:inline">教师工作台</Link><ChevronRight className="hidden size-3.5 text-muted-foreground sm:block" /><span>{title}</span>{pathname.startsWith('/teacher/tasks/') && <><ChevronRight className="size-3.5 text-muted-foreground" /><span className="text-muted-foreground">任务详情</span></>}</nav></div>
         <div className="flex shrink-0 items-center gap-3"><span className="hidden rounded-md bg-primary/8 px-2 py-1 text-[11px] text-primary sm:inline">教师端</span>{user && <UserProfile user={user}><Button variant="ghost" className="gap-2 px-2" aria-label="查看我的资料"><span className="flex size-8 items-center justify-center rounded-full bg-muted text-primary"><GraduationCap className="size-4" /></span><span className="max-w-32 truncate text-sm font-medium">{user.display_name}</span></Button></UserProfile>}</div>
       </header>
-      <main className={cn('mx-auto p-4 md:p-8', !isMap && 'max-w-[1680px]')}>{children}</main>
+      <main className={cn('mx-auto p-4 md:p-6 xl:p-8', !isMap && 'max-w-[1680px]')}>{children}</main>
     </div>
   </div>
 }

@@ -26,9 +26,9 @@ export function AdminTable<T>({ rows, columns, rowKey, emptyText = '暂无数据
   const pages = Math.max(1, Math.ceil(rows.length / pageSize))
   const current = Math.min(page, pages)
   const visible = pagination ? rows.slice((current - 1) * pageSize, current * pageSize) : rows
-  return <div className="admin-data-table overflow-hidden rounded-xl border border-border bg-card">
-    <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="border-b border-border bg-muted/60 text-muted-foreground"><tr>{columns.map(column => <th key={column.key} scope="col" className={cn('whitespace-nowrap px-4 py-3 text-xs font-medium', column.className)}>{column.label}</th>)}</tr></thead>
-      <tbody className="divide-y divide-border">{visible.map(row => <tr key={rowKey(row)} className="hover:bg-muted/30">{columns.map(column => <td key={column.key} className={cn('px-4 py-3.5 align-middle', column.className)}>{column.render(row)}</td>)}</tr>)}</tbody>
+  return <div className="admin-data-table min-w-0 overflow-hidden rounded-xl border border-border bg-card">
+    <div className="overflow-x-auto overscroll-x-contain"><table className="w-full text-left text-sm"><thead className="border-b border-border bg-muted/60 text-muted-foreground"><tr>{columns.map(column => <th key={column.key} scope="col" className={cn('whitespace-nowrap px-4 py-3 text-xs font-medium md:max-2xl:px-3', column.className)}>{column.label}</th>)}</tr></thead>
+      <tbody className="divide-y divide-border">{visible.map(row => <tr key={rowKey(row)} className="hover:bg-muted/30">{columns.map(column => <td key={column.key} className={cn('px-4 py-3.5 align-middle md:max-2xl:px-3', column.className)}>{column.render(row)}</td>)}</tr>)}</tbody>
     </table>{visible.length === 0 && <div className="px-5 py-14 text-center text-sm text-muted-foreground">{emptyText}</div>}</div>
     {pagination && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 text-xs text-muted-foreground"><span>共 {rows.length} 条 · 每页 {pageSize} 条</span><div className="flex items-center gap-3"><Button variant="outline" size="sm" disabled={current === 1} onClick={() => setPage(current - 1)}>上一页</Button><span>{current} / {pages}</span><Button variant="outline" size="sm" disabled={current === pages} onClick={() => setPage(current + 1)}>下一页</Button></div></div>}
   </div>

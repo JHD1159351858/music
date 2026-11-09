@@ -1,7 +1,7 @@
 .teacher-detail-workspace { --detail-line: color-mix(in oklab, var(--primary) 16%, var(--border)); }
 .teacher-detail-grid { display: grid; align-items: start; gap: 1.5rem; }
 .teacher-detail-grid > * { min-width: 0; }
-.teacher-detail-panel { padding: 1.25rem; border: 1px solid var(--detail-line); border-radius: var(--radius); background: var(--card); box-shadow: 0 .5rem 1.5rem color-mix(in oklab, var(--foreground) 4%, transparent); }
+.teacher-detail-panel { padding: 1.25rem; scroll-margin-top: 6rem; border: 1px solid var(--detail-line); border-radius: var(--radius); background: var(--card); box-shadow: 0 .5rem 1.5rem color-mix(in oklab, var(--foreground) 4%, transparent); }
 .teacher-detail-panel > header { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
 .teacher-detail-panel h2 { font-size: 1.05rem; font-weight: 600; line-height: 1.6; }
 .teacher-detail-panel .teacher-detail-empty { padding-block: 2rem; color: var(--muted-foreground); font-size: .875rem; line-height: 1.9; }
@@ -17,6 +17,11 @@
 .teacher-community-reply > div:last-child { flex-wrap: wrap; }
 .teacher-semester-editor form { display: grid; gap: 1rem; align-items: end; }
 .teacher-semester-editor .teacher-editor-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: .5rem; }
+
+@media (768px <= width < 1024px) {
+  .teacher-semester-editor form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .teacher-semester-editor .teacher-editor-actions { grid-column: 1 / -1; }
+}
 
 @media (min-width: 1024px) {
   .teacher-semester-editor form { grid-template-columns: minmax(12rem, 1.4fr) repeat(2, minmax(9rem, 1fr)) minmax(9rem, .8fr); }

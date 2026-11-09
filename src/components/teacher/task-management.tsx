@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Eye, LockKeyhole, Pencil, Plus, Search, Trash2 } from 'lucide-react'
@@ -12,6 +12,7 @@ import { errorMessage, jsonBody, teachingApi, teachingDate } from '@/components/
 import { TaskForm } from '@/components/teaching/task-form'
 import { AdminNotice, AdminPageHeader, AdminTable, type AdminColumn } from '@/components/teacher/admin-table'
 import { TeacherReviewDialog } from '@/components/teacher/review-dialog'
+import { revealStackedAdminPanel } from '@/components/teacher/detail-workspaces'
 import { ScoreCover } from '@/components/practice/score-cover'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -64,6 +65,7 @@ function TaskManagementContent() {
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
+  const panel = useRef<HTMLElement>(null)
   const [editor, setEditor] = useState<{ task: PracticeTask | null } | null>(null)
   const [selected, setSelected] = useState<PracticeTask | null>(null)
   const now = useCurrentMinute()
@@ -86,16 +88,19 @@ function TaskManagementContent() {
   }, [user])
   useEffect(() => { void load() }, [load])
   useEffect(() => { if (searchParams.get('create') === '1') setEditor({ task: null }) }, [searchParams])
+  useEffect(() => {
+    if (editor && !loading) revealStackedAdminPanel(panel.current)
+  }, [editor, loading])
   const filtered = useMemo(() => tasks.filter(task => task.title.toLowerCase().includes(query.trim().toLowerCase()) && (status === 'all' || taskState(task, now) === status)), [tasks, query, status, now])
   const columns: AdminColumn<PracticeTask>[] = [
-    { key: 'title', label: '任务名称', render: task => <div className="min-w-36"><button type="button" className={cn('text-left font-medium hover:text-primary', selected?.id === task.id && 'text-primary')} onClick={() => setSelected(task)}>{task.title}</button><p className="mt-1 line-clamp-1 max-w-44 text-xs text-muted-foreground">{task.description}</p></div> },
+    { key: 'title', label: '任务名称', render: task => <div className="min-w-36"><button type="button" className={cn('text-left font-medium hover:text-primary', selected?.id === task.id && 'text-primary')} onClick={() => { setSelected(task); revealStackedAdminPanel(panel.current) }}>{task.title}</button><p className="mt-1 line-clamp-1 max-w-44 text-xs text-muted-foreground">{task.description}</p></div> },
     { key: 'score', label: '练习曲目', render: task => { const score = scores.find(item => item.id === task.score_id); return task.score_mode === 'random' ? <span className="text-sm">系统随机选曲</span> : score ? <div className="flex min-w-28 items-center gap-2"><div className="size-9 shrink-0 overflow-hidden rounded border border-border bg-muted"><ScoreCover score={score} /></div><span className="text-sm">{score.title}</span></div> : <span className="text-sm">曲目不可用</span> } },
     { key: 'status', label: '状态', render: task => <Badge variant={taskState(task, now) === 'active' ? 'default' : 'secondary'}>{stateLabels[taskState(task, now)]}</Badge> },
     { key: 'actions', label: '操作', render: task => user && <div className="flex items-center gap-1"><Button asChild variant="ghost" size="sm"><Link href={`/teacher/tasks/${task.id}`}><Eye className="h-3.5 w-3.5" />查看</Link></Button><TaskActions task={task} userId={user.id} onEdit={() => setEditor({ task })} onChanged={() => void load()} onDeleted={() => void load()} /></div> },
   ]
   if (!user) return null
   const selectedTask = filtered.find(task => task.id === selected?.id) ?? filtered[0] ?? null
-  return <div className="space-y-6"><AdminPageHeader title="练习任务" description="发布练习要求，按任务跟踪提交和完成情况。" actions={<Button disabled={loading || Boolean(error)} onClick={() => setEditor({ task: null })}><Plus className="h-4 w-4" />发布任务</Button>} /><div className="flex flex-wrap gap-3 rounded-xl border border-border bg-card p-4"><div className="relative min-w-52 flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input className="pl-9" aria-label="搜索任务名称" placeholder="搜索任务名称" value={query} onChange={event => setQuery(event.target.value)} /></div><Select value={status} onValueChange={setStatus}><SelectTrigger aria-label="任务状态筛选" className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部状态</SelectItem>{Object.entries(stateLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></div>{error ? <AdminNotice message={error} onRetry={() => void load()} /> : loading ? <p className="py-16 text-center text-muted-foreground">正在读取任务…</p> : <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]"><AdminTable rows={filtered} columns={columns} rowKey={task => task.id} emptyText="暂无符合条件的练习任务" /><aside className="min-w-0 rounded-xl border border-border bg-card p-5 xl:sticky xl:top-24 xl:self-start">{editor ? <TaskForm key={editor.task?.id ?? 'new'} embedded userId={user.id} task={editor.task} scores={scores} students={students} onClose={() => setEditor(null)} onSaved={() => void load()} /> : selectedTask ? <><div className="flex items-start justify-between gap-3"><div><p className="text-xs text-muted-foreground">任务详情</p><h2 className="mt-1 font-serif text-xl">{selectedTask.title}</h2></div><Badge variant={taskState(selectedTask, now) === 'active' ? 'default' : 'secondary'}>{stateLabels[taskState(selectedTask, now)]}</Badge></div><p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{selectedTask.description}</p><div className="mt-5 space-y-2 border-t border-border pt-4 text-sm"><p>截止时间：{teachingDate(selectedTask.end_at)}</p><p>面向范围：{audienceLabel(selectedTask)}</p><p>已交 / 应交：{selectedTask.submitted_count ?? 0} / {selectedTask.student_count ?? 0} 人</p></div><div className="mt-5"><Button className="w-full" onClick={() => setEditor({ task: selectedTask })}><Pencil className="h-4 w-4" />编辑任务</Button></div></> : <p className="py-16 text-center text-sm text-muted-foreground">选择任务后查看要求与提交进度。</p>}</aside></div>}</div>
+  return <div className="space-y-6"><AdminPageHeader title="练习任务" description="发布练习要求，按任务跟踪提交和完成情况。" actions={<Button disabled={loading || Boolean(error)} onClick={() => setEditor({ task: null })}><Plus className="h-4 w-4" />发布任务</Button>} /><div className="flex flex-wrap gap-3 rounded-xl border border-border bg-card p-4"><div className="relative min-w-52 flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input className="pl-9" aria-label="搜索任务名称" placeholder="搜索任务名称" value={query} onChange={event => setQuery(event.target.value)} /></div><Select value={status} onValueChange={setStatus}><SelectTrigger aria-label="任务状态筛选" className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部状态</SelectItem>{Object.entries(stateLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></div>{error ? <AdminNotice message={error} onRetry={() => void load()} /> : loading ? <p className="py-16 text-center text-muted-foreground">正在读取任务…</p> : <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]"><AdminTable rows={filtered} columns={columns} rowKey={task => task.id} emptyText="暂无符合条件的练习任务" /><aside ref={panel} className="min-w-0 scroll-mt-24 rounded-xl border border-border bg-card p-5 xl:sticky xl:top-24 xl:self-start">{editor ? <TaskForm key={editor.task?.id ?? 'new'} embedded userId={user.id} task={editor.task} scores={scores} students={students} onClose={() => setEditor(null)} onSaved={() => void load()} /> : selectedTask ? <><div className="flex items-start justify-between gap-3"><div><p className="text-xs text-muted-foreground">任务详情</p><h2 className="mt-1 font-serif text-xl">{selectedTask.title}</h2></div><Badge variant={taskState(selectedTask, now) === 'active' ? 'default' : 'secondary'}>{stateLabels[taskState(selectedTask, now)]}</Badge></div><p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{selectedTask.description}</p><div className="mt-5 space-y-2 border-t border-border pt-4 text-sm"><p>截止时间：{teachingDate(selectedTask.end_at)}</p><p>面向范围：{audienceLabel(selectedTask)}</p><p>已交 / 应交：{selectedTask.submitted_count ?? 0} / {selectedTask.student_count ?? 0} 人</p></div><div className="mt-5"><Button className="w-full" onClick={() => setEditor({ task: selectedTask })}><Pencil className="h-4 w-4" />编辑任务</Button></div></> : <p className="py-16 text-center text-sm text-muted-foreground">选择任务后查看要求与提交进度。</p>}</aside></div>}</div>
 }
 
 interface StudentCompletion extends Profile { submission?: TaskSubmission; currentAudience: boolean }

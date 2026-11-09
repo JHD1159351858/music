@@ -191,7 +191,7 @@ export default function LandingPage() {
       </div>
       <section className="journey-mobile-menu" aria-label="功能快捷入口">
         <div className="mb-5"><h2 className="font-serif text-2xl text-primary">开启你的音乐之旅</h2><p className="mt-2 text-sm text-muted-foreground">每一次练习，都让音乐更近一步。</p></div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="journey-quick-links grid grid-cols-2 gap-3">
           {ENTRIES.map((entry) => <button key={entry.label} onClick={() => navigate(entry.href)} className="rounded-xl border border-primary/20 bg-card p-4 text-left transition hover:border-primary/50"><entry.icon className="mb-3 size-6 text-primary" /><span className="block text-sm font-medium">{entry.label}</span><span className="mt-1 block text-xs text-muted-foreground">{entry.detail}</span></button>)}
           <button onClick={openAssistant} className="rounded-xl border border-primary/20 bg-card p-4 text-left"><Sparkles className="mb-3 size-6 text-primary" /><span className="block text-sm font-medium">AI 助教</span><span className="mt-1 block text-xs text-muted-foreground">智能答疑与学习辅助</span></button>
         </div>

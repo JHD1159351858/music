@@ -131,7 +131,7 @@ function PracticeContent() {
   if (!user) return null
 
   return (
-    <div className="repertoire-page space-y-6">
+    <div className="repertoire-page @container min-w-0 space-y-6">
       <header className="repertoire-header">
         <div><p className="mb-2 text-xs tracking-[0.24em] text-primary">REPERTOIRE & PRACTICE</p><h1 className="font-serif text-3xl font-semibold text-foreground">曲库选谱</h1><p className="mt-2 text-sm text-muted-foreground">{isTeacher ? '整理课堂曲目，为每次练习留下一份清晰指引。' : '挑一首心仪的曲子，让今天的练习从这里开始。'}</p></div>
         <div className="flex flex-wrap gap-2"><Button onClick={() => setEditor({ score: null })} className="gap-2"><Upload className="h-4 w-4" />{isTeacher ? '上传 / 批量上传' : '上传个人琴谱'}</Button>{!isTeacher && <Button asChild variant="outline" className="gap-2"><a href="https://imslp.org" target="_blank" rel="noopener noreferrer">查询曲库<ExternalLink className="h-4 w-4" /></a></Button>}</div>
@@ -157,9 +157,9 @@ function PracticeContent() {
             <Select value={scoreType} onValueChange={setScoreType}><SelectTrigger aria-label="类型筛选" className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部类型</SelectItem>{SCORE_TYPES.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select>
             <Select value={period} onValueChange={setPeriod}><SelectTrigger aria-label="时期筛选" className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部时期</SelectItem>{periods.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
           </div>}
-          {['library', 'queue', ...(!isTeacher ? ['personal'] : [])].map((tab) => <TabsContent key={tab} value={tab}>
+          {['library', 'queue', ...(!isTeacher ? ['personal'] : [])].map((tab) => <TabsContent key={tab} value={tab} className="min-w-0">
             {tab === 'personal' && <p className="mb-4 text-sm text-muted-foreground">个人上传仅本人可见，上传后自动加入「我要练」。</p>}
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-5 @min-[36rem]:grid-cols-2 @min-[58rem]:grid-cols-3">
               {filtered.map((score) => <article key={score.id} className={`repertoire-card group flex flex-col${selectedScore?.id === score.id ? ' is-selected' : ''}`}>
                 <button type="button" onClick={() => setSelectedScoreId(score.id)} aria-label={`选择曲目${score.title}`} aria-pressed={selectedScore?.id === score.id} className="repertoire-card-cover">
                   <ScoreCover score={score} />
@@ -173,7 +173,7 @@ function PracticeContent() {
                   <h2 className="font-serif text-xl font-medium text-foreground">{score.title}</h2><p className="mt-1 text-sm text-muted-foreground">{score.composer}</p>
                   {isTeacher && <p className="mt-2 text-xs text-muted-foreground">发布范围：{score.target_classes?.length ? score.target_classes.join('、') : '全部班级'}</p>}
                   {score.tips && <p className="mt-4 line-clamp-2 border-l-2 border-primary/40 pl-3 text-xs leading-relaxed text-muted-foreground">{score.tips}</p>}
-                  <div className="mt-auto flex flex-wrap items-center gap-2 pt-5">
+                  <div className="mt-auto flex flex-wrap items-center gap-2 pt-5 pointer-coarse:[&_button]:min-h-11 pointer-coarse:[&_a]:min-h-11 pointer-coarse:[&_button]:min-w-11">
                     <Button asChild size="sm" className="flex-1 gap-1.5"><Link href={`/practice/session/${score.id}`}><Play className="h-3.5 w-3.5" />{isTeacher ? '试练' : '开始练习'}</Link></Button>
                     <Button variant="outline" size="sm" disabled={busyId === score.id} onClick={() => void toggleQueue(score)} className="gap-1.5">{queuedIds.has(score.id) ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}{queuedIds.has(score.id) ? '移出列表' : '我要练'}</Button>
                     <Button variant="ghost" size="icon" onClick={() => setPreview(score)} aria-label={`查看${score.title}`}><Eye className="h-4 w-4" /></Button>
@@ -185,7 +185,7 @@ function PracticeContent() {
             </div>
             {!!filtered.length && <p className="repertoire-help mt-4">点击曲目封面，切换上方展示；点击查看图标阅读完整琴谱。</p>}
           </TabsContent>)}
-          <TabsContent value="history" className="space-y-5">
+          <TabsContent value="history" className="min-w-0 space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-serif text-xl">{isTeacher ? '学生练习档案' : '我的练习档案'}</h2><p className="mt-1 text-xs text-muted-foreground">每段琴声，都留下成长的痕迹。</p></div><Badge variant="outline" className="gap-2 border-primary/30 px-3 py-2 text-primary"><Clock3 className="h-4 w-4" />累计 {formatDuration(records.reduce((sum, r) => sum + r.duration_seconds, 0))}</Badge></div>
             <div className="overflow-x-auto rounded-xl border border-border bg-card"><table className="w-full text-left text-sm"><thead><tr className="border-b border-border text-xs text-muted-foreground">{isTeacher && <th className="px-5 py-4 font-normal">学生</th>}<th className="px-5 py-4 font-normal">练习曲目</th><th className="px-5 py-4 font-normal">琴谱来源</th><th className="px-5 py-4 font-normal">日期 / 开始时间</th><th className="px-5 py-4 font-normal">有效时长</th><th className="px-5 py-4 font-normal">暂停</th><th className="px-5 py-4 font-normal">练习录音</th>{!isTeacher && <th className="px-5 py-4 font-normal">管理</th>}</tr></thead><tbody>{records.map((record) => { const linkedScore = record.score_id ? scores.find((item) => item.id === record.score_id) ?? queue.find((item) => item.id === record.score_id) : undefined; return <tr key={record.id} className="border-b border-border/50 last:border-0 hover:bg-muted/20">{isTeacher && <td className="whitespace-nowrap px-5 py-4">{record.profiles?.nickname ?? '—'}</td>}<td className="min-w-36 px-5 py-4 font-medium">{isTeacher ? record.piece_title : <div className="flex min-w-44 items-center gap-3">{linkedScore && <div className="h-12 w-10 shrink-0 overflow-hidden rounded-md border border-primary/20"><ScoreCover score={linkedScore} /></div>}<span>{record.piece_title}</span></div>}</td><td className="whitespace-nowrap px-5 py-4 text-muted-foreground">{record.source === 'student' ? '自选上传' : '教师谱库'}</td><td className="whitespace-nowrap px-5 py-4 text-muted-foreground"><span className="block">{record.practice_date}</span><span className="mt-1 block text-xs">{new Date(record.started_at).toLocaleTimeString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span></td><td className="whitespace-nowrap px-5 py-4 text-primary">{formatDuration(record.duration_seconds)}</td><td className="whitespace-nowrap px-5 py-4 text-muted-foreground">{record.pause_count} 次</td><td className="px-5 py-4">{record.audio_url ? <audio controls preload="none" src={record.audio_url} className="h-8 w-52" /> : <span className="text-xs text-muted-foreground">未录音</span>}</td>{!isTeacher && <td className="px-5 py-4"><Button variant="ghost" size="icon" onClick={() => setDeletingRecord(record)} aria-label={`删除${record.piece_title}练习记录`}><Trash2 className="h-4 w-4" /></Button></td>}</tr>})}{!records.length && <tr><td colSpan={8} className="py-16 text-center text-muted-foreground">暂无练习记录，选择一首曲子开始练习吧。</td></tr>}</tbody></table></div>
           </TabsContent>

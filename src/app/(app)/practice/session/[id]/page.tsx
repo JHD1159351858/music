@@ -257,22 +257,28 @@ function PracticeSession() {
       }}>{mode === 1 ? '单页' : '双页'}</Button>)}
     </div>}
   </>
+  const scoreTools = 'flex min-w-0 flex-wrap items-center gap-2 pointer-coarse:[&_button]:min-h-11 pointer-coarse:[&_button]:min-w-11'
 
   return (
-    <div className={`fixed inset-0 z-50 flex h-dvh flex-col overflow-hidden bg-background text-foreground ${user?.role === 'student' ? 'concert-practice' : ''}`}>
-      <header className={`concert-practice-header ${scoreFocused ? 'hidden' : 'flex'} shrink-0 flex-wrap items-center gap-3 border-b border-border bg-card px-4 py-3 md:px-6`}>
-        <Button variant="ghost" size="icon" disabled={saving} onClick={() => setLeaveOpen(true)} aria-label="返回琴谱库"><ArrowLeft className="h-5 w-5" /></Button>
-        {score && user?.role === 'student' && <ScoreCover score={score} className="concert-practice-cover" />}
-        <div className="min-w-0 flex-1 basis-3/4 sm:basis-auto"><h1 className="truncate font-serif text-lg font-semibold">{score?.title ?? '正在准备琴谱…'}</h1><p className="truncate text-xs text-muted-foreground">{score?.composer}{score && ` · ${score.score_type ?? '类型未设置'} · ${score.period ?? '时期未设置'}`}{taskId ? ' · 任务练习' : ' · 沉浸练习'}</p></div>
-        {pageControls}
-        {scoreZoomControls}
-        <Button variant="outline" size="sm" aria-label="全屏看谱" onClick={toggleScoreFocus} className="gap-2"><Maximize className="h-4 w-4" /><span className="hidden sm:inline">全屏看谱</span></Button>
-        <Button variant={assistantOpen ? 'secondary' : 'ghost'} size="sm" onClick={() => setAssistantOpen((v) => !v)} className="gap-2"><Sparkles className="h-4 w-4" /><span className="hidden sm:inline">AI 助教</span></Button>
+    <div data-score-focused={scoreFocused ? '' : undefined} className={`fixed inset-0 z-50 flex h-dvh flex-col overflow-hidden bg-background text-foreground pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] ${user?.role === 'student' ? 'concert-practice' : ''}`}>
+      <header className={`concert-practice-header ${scoreFocused ? 'hidden' : 'grid'} shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-b border-border bg-card px-4 py-2 md:px-6 min-[60rem]:landscape:grid-cols-[minmax(0,1fr)_auto_auto]`}>
+        <div className="flex min-w-0 items-center gap-2">
+          <Button variant="ghost" size="icon" disabled={saving} onClick={() => setLeaveOpen(true)} aria-label="返回琴谱库" className="pointer-coarse:size-11"><ArrowLeft className="h-5 w-5" /></Button>
+          {score && user?.role === 'student' && <ScoreCover score={score} className="concert-practice-cover md:max-xl:landscape:h-10! md:max-xl:landscape:w-8! min-[60rem]:max-lg:landscape:hidden!" />}
+          <div className="min-w-0"><h1 title={score?.title} className="truncate font-serif text-lg font-semibold">{score?.title ?? '正在准备琴谱…'}</h1><p className="truncate text-xs text-muted-foreground">{score?.composer}{score && ` · ${score.score_type ?? '类型未设置'} · ${score.period ?? '时期未设置'}`}{taskId ? ' · 任务练习' : ' · 沉浸练习'}</p></div>
+        </div>
+        <div role="toolbar" aria-label="琴谱控制" className={`${scoreTools} col-span-full col-start-1 row-start-2 min-[60rem]:landscape:col-span-1 min-[60rem]:landscape:col-start-2 min-[60rem]:landscape:row-start-1`}>
+          {pageControls}{scoreZoomControls}
+        </div>
+        <div className="col-start-2 row-start-1 flex items-center gap-1 sm:gap-2 min-[60rem]:landscape:col-start-3 pointer-coarse:[&_button]:min-h-11 pointer-coarse:[&_button]:min-w-11">
+          <Button variant="outline" size="sm" aria-label="全屏看谱" title="全屏看谱" onClick={toggleScoreFocus}><Maximize className="h-4 w-4" /><span className="hidden sm:inline min-[60rem]:max-xl:landscape:hidden">全屏看谱</span></Button>
+          <Button variant={assistantOpen ? 'secondary' : 'ghost'} size="sm" aria-label="AI 助教" aria-expanded={assistantOpen} title="AI 助教" onClick={() => setAssistantOpen((v) => !v)}><Sparkles className="h-4 w-4" /><span className="hidden sm:inline min-[60rem]:max-xl:landscape:hidden">AI 助教</span></Button>
+        </div>
       </header>
-      {!scoreFocused && score?.tips && <div className="shrink-0 border-b border-border bg-primary/5 px-5 py-2 text-xs leading-relaxed text-primary">教师提醒：{score.tips}</div>}
+      {!scoreFocused && score?.tips && <div className="max-h-[14dvh] shrink-0 overflow-y-auto border-b border-border bg-primary/5 px-5 py-2 text-xs leading-relaxed text-primary">教师提醒：{score.tips}</div>}
       <div className="relative flex min-h-0 flex-1">
         <section aria-label="琴谱显示区域" className="concert-score-stage flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-muted/20">
-          {scoreFocused && <div role="toolbar" aria-label="全屏看谱控制" className="z-20 m-2 flex shrink-0 flex-wrap items-center justify-end gap-2 self-end rounded-lg bg-card/95 p-1 shadow-sm">{pageControls}{scoreZoomControls}<Button variant="outline" size="sm" onClick={toggleScoreFocus} className="gap-2" title="退出全屏看谱（Esc）"><Minimize className="h-4 w-4" />退出全屏</Button></div>}
+          {scoreFocused && <div role="toolbar" aria-label="全屏看谱控制" className={`${scoreTools} z-20 m-2 shrink-0 justify-end self-end rounded-lg bg-card/95 p-1 shadow-sm`}>{pageControls}{scoreZoomControls}<Button variant="outline" size="sm" onClick={toggleScoreFocus} className="gap-2" title="退出全屏看谱（Esc）"><Minimize className="h-4 w-4" />退出全屏</Button></div>}
           <div className="min-h-0 flex-1">
           {!score ? <div className="flex h-full items-center justify-center gap-3 text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin" />正在加载琴谱…</div> : page?.image_url ? pdf ? <iframe src={`${page.image_url.split('#')[0]}#${scoreView.zoom === 1 ? 'view=Fit&zoom=page-fit' : `zoom=${Math.round(scoreView.zoom * 100)}`}`} title={`${score.title}完整 PDF 琴谱`} className="h-full min-h-full w-full border-0" /> : <ScoreViewport key={`${score.id}-${start}-${size}`} spread={{
             current: spreadPages(start, end),
@@ -285,11 +291,11 @@ function PracticeSession() {
           }} view={scoreView} onChange={setScoreView} rightPane={doubleView ? { view: rightScoreView, onChange: setRightScoreView } : undefined} /> : <div className="flex h-full min-h-72 flex-col items-center justify-center gap-4 p-8 text-center"><FileMusic className="h-14 w-14 text-primary/40" /><h2 className="font-serif text-2xl">{score.title}</h2><p className="max-w-md text-sm leading-relaxed text-muted-foreground">该曲目暂未上传谱面文件。可继续计时练习，或请教师补充琴谱。</p></div>}
           </div>
         </section>
-        {assistantOpen && <aside className="absolute inset-y-0 right-0 z-10 flex w-80 max-w-full flex-col border-l border-border bg-background p-3 shadow-xl md:static md:w-96 md:shrink-0"><div className="mb-2 flex items-center justify-between text-sm"><span className="text-primary">知音 · AI 助教</span><Button variant="ghost" size="icon" onClick={() => setAssistantOpen(false)} aria-label="关闭 AI 助教"><X className="h-4 w-4" /></Button></div><ChatPanel className="min-h-0 flex-1" context={{ kind: 'score', name: score?.title }} placeholder="询问指法、节奏与练习方法…" /></aside>}
+        {assistantOpen && <aside aria-label="知音 AI 助教" className="absolute inset-y-0 right-0 z-10 flex w-80 max-w-full flex-col border-l border-border bg-background p-3 shadow-xl sm:w-96 xl:pointer-fine:landscape:static xl:pointer-fine:landscape:shrink-0"><div className="mb-2 flex items-center justify-between text-sm"><span className="text-primary">知音 · AI 助教</span><Button variant="ghost" size="icon" onClick={() => setAssistantOpen(false)} aria-label="关闭 AI 助教" className="pointer-coarse:size-11"><X className="h-4 w-4" /></Button></div><ChatPanel className="min-h-0 flex-1" context={{ kind: 'score', name: score?.title }} placeholder="询问指法、节奏与练习方法…" /></aside>}
       </div>
       {!scoreFocused && micError && !ended && <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-card px-5 py-2"><p className="text-xs text-muted-foreground">{micError}</p><Button size="sm" variant="outline" onClick={() => void startMic()} className="shrink-0 gap-2"><RotateCcw className="h-3.5 w-3.5" />启用录音</Button></div>}
       {saveError && <div role="alert" className="shrink-0 border-t border-destructive/30 bg-destructive/5 px-5 py-3 text-sm text-destructive">存档未完成：{saveError}。练习已停止计时，录音仍保留在当前页面，请点击「重试保存」。</div>}
-      <footer className={`concert-practice-footer ${scoreFocused ? 'hidden' : 'flex'} shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border bg-card px-4 py-3 md:px-6`}>
+      <footer className={`concert-practice-footer ${scoreFocused ? 'hidden' : 'flex'} shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border bg-card px-4 py-3 md:px-6 md:max-xl:landscape:py-2! pointer-coarse:[&_button]:min-h-11`}>
         <div className="flex items-center gap-5"><div><p className="text-[10px] tracking-wider text-muted-foreground">有效练习时长</p><div role="timer" aria-label="有效练习时长" className="font-mono text-3xl font-semibold tabular-nums tracking-wide text-primary">{time}</div></div><div className="space-y-1"><p className="flex items-center gap-2 text-sm">{mic === 'recording' && !ended ? <><span className={`h-2 w-2 rounded-full ${paused ? 'bg-primary' : 'animate-pulse bg-destructive'}`} />{paused ? '录音暂停' : '正在录音'}</> : <><MicOff className="h-4 w-4 text-muted-foreground" />{ended ? '已结束' : mic === 'preparing' ? '准备录音…' : '未录音'}</>}</p><p className="text-[10px] text-muted-foreground">{paused && !ended ? '计时已暂停' : `已暂停 ${pauseCount} 次`}</p></div></div>
         <div className="flex items-center gap-2"><Button variant="outline" onClick={togglePause} disabled={!score || ended || saving} className="gap-2">{paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}{paused ? '继续' : '暂停'}</Button><Button onClick={() => void finish()} disabled={!score || saving} className="gap-2">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saveError ? <RotateCcw className="h-4 w-4" /> : <Square className="h-4 w-4" />}{saving ? '正在存档…' : saveError ? '重试保存' : '结束并保存'}</Button></div>
       </footer>

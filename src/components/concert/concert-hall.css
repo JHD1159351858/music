@@ -30,11 +30,54 @@
 .concert-sidebar-account { margin-top: 2rem; padding: 1.5rem; border-top: 1px solid var(--concert-rule); }
 .concert-account-action { display: flex; align-items: center; gap: .6rem; margin-top: 1rem; color: var(--muted-foreground); font-size: .8rem; }
 .concert-account-action:hover { color: var(--primary); }
-.concert-main { min-width: 0; min-height: 100dvh; margin-left: var(--concert-sidebar-width); }
+.concert-main { position: relative; isolation: isolate; min-width: 0; min-height: 100dvh; margin-left: var(--concert-sidebar-width); }
+.concert-main[data-module='practice'] { --concert-module-background: url('/backgrounds/piano/practice.png'); }
+.concert-main[data-module='analysis'] { --concert-module-background: url('/backgrounds/piano/analysis.png'); }
+.concert-main[data-module='tasks'] { --concert-module-background: url('/backgrounds/piano/tasks.png'); }
+.concert-main[data-module='community'] { --concert-module-background: url('/backgrounds/piano/community.png'); }
+.concert-main[data-module='map'] { --concert-module-background: url('/backgrounds/piano/map.png'); }
+.concert-main[data-module='stats'] { --concert-module-background: url('/backgrounds/piano/stats.png'); }
+.concert-main::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 0 var(--concert-sidebar-width);
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--background);
+  background-image: linear-gradient(90deg, color-mix(in oklab, var(--background) 65%, transparent), color-mix(in oklab, var(--background) 82%, transparent)), var(--concert-module-background, none);
+  background-size: cover;
+  background-position: right center;
+  background-repeat: no-repeat;
+}
 .concert-content { width: 100%; max-width: 100rem; margin-inline: auto; padding: 2.5rem clamp(1.5rem, 3vw, 3rem) 4rem; }
 .concert-student-map .concert-content { max-width: none; padding-inline: 1.5rem; }
 .concert-student [data-slot="button"][data-variant="default"] { box-shadow: 0 .2rem .75rem color-mix(in oklab, var(--primary) 10%, transparent); }
 .concert-student [data-slot="dialog-content"] { color: var(--foreground); }
+
+@media (min-width: 768px) and (max-width: 1180px) and (orientation: landscape),
+       (min-width: 768px) and (max-width: 1366px) and (orientation: landscape) and (pointer: coarse) {
+  .concert-student { --concert-sidebar-width: 5.5rem; }
+  .concert-brand { justify-content: center; padding: 1.25rem .5rem; }
+  .concert-brand > span:last-child, .concert-account-summary { display: none; }
+  .concert-navigation { padding-inline: .5rem; }
+  .concert-nav-link { flex-direction: column; justify-content: center; gap: .25rem; min-height: 3.2rem; padding: .3rem; font-size: .68rem; text-align: center; line-height: 1.25; }
+  .concert-sidebar-account { display: grid; gap: .25rem; margin-top: .5rem; padding: .5rem; }
+  .concert-account-action { justify-content: center; flex-direction: column; gap: .25rem; min-height: 2.75rem; margin-top: 0; font-size: .68rem; }
+  .concert-content { padding-top: 1.5rem; }
+}
+
+@media (max-width: 767px),
+       (min-width: 768px) and (max-width: 1024px) and (orientation: portrait),
+       (min-width: 768px) and (max-width: 1366px) and (orientation: portrait) and (pointer: coarse) {
+  .concert-student { --concert-sidebar-width: 0rem; }
+  .concert-mobile-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; padding: .4rem 1rem; border-bottom: 1px solid var(--border); background: var(--sidebar); }
+  .concert-sidebar { inset: auto 0 0; width: auto; padding-bottom: env(safe-area-inset-bottom, 0px); border-right: 0; border-top: 1px solid var(--border); background: var(--card); }
+  .concert-brand, .concert-sidebar-account { display: none; }
+  .concert-navigation { display: flex; gap: .25rem; overflow-x: auto; overflow-y: hidden; padding: .4rem .5rem; }
+  .concert-nav-link { flex: 1 0 auto; flex-direction: column; gap: .3rem; min-height: 3.4rem; margin: 0; padding: .4rem .7rem; font-size: .65rem; white-space: nowrap; }
+  .concert-nav-link.is-active { box-shadow: inset 0 -2px 0 var(--primary); }
+  .concert-content, .concert-student-map .concert-content { padding: 1.5rem clamp(1rem, 3vw, 1.5rem) calc(7rem + env(safe-area-inset-bottom, 0px)); }
+}
 
 .repertoire-page { --concert-rule: color-mix(in oklab, var(--primary) 18%, var(--border)); }
 .repertoire-header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1.5rem; }
@@ -95,14 +138,6 @@
   .repertoire-hero-cover-title { display: none; }
 }
 @media (max-width: 767px) {
-  .concert-student { --concert-sidebar-width: 0rem; }
-  .concert-mobile-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .9rem 1rem; border-bottom: 1px solid var(--border); background: var(--sidebar); }
-  .concert-sidebar { inset: auto 0 0; width: auto; max-height: 5rem; border-right: 0; border-top: 1px solid var(--border); background: var(--card); }
-  .concert-brand, .concert-sidebar-account { display: none; }
-  .concert-navigation { display: flex; gap: .25rem; overflow-x: auto; overflow-y: hidden; padding: .4rem .5rem; }
-  .concert-nav-link { flex: 0 0 auto; flex-direction: column; gap: .3rem; min-height: 3.4rem; margin: 0; padding: .4rem .7rem; font-size: .65rem; }
-  .concert-nav-link.is-active { box-shadow: inset 0 -2px 0 var(--primary); }
-  .concert-content, .concert-student-map .concert-content { padding: 1.5rem 1rem 7rem; }
   .repertoire-header { gap: 1rem; }
   .repertoire-hero, .repertoire-hero-copy { min-height: 19rem; }
   .repertoire-hero-image { width: 100%; opacity: .52; mask-image: linear-gradient(to left, var(--foreground), transparent); }
