@@ -1,0 +1,25 @@
+2026-10-24 music21 browser integration verification
+
+Final run: PASS, exit 0, 12 checks. See results.json and checks.log.
+The final production Next build and real .venv-music21 Python (music21 10.5.1)
+processed the authored public MusicXML example and a real zipfile-generated MXL.
+Desktop results and 390px upload screenshots were inspected after capture.
+
+The model SDK made three actual loopback HTTP requests to a deterministic SSE
+fixture. model-prompts.json records the prompts received by that fixture.
+This verifies the browser, Next chat route, receipt validation and SDK transport;
+it does not verify live model quality or availability, or real Chaoxing SSO.
+Existing application data was not used or modified.
+
+The successful run closed its browser/server and removed its own temporary data.
+An earlier run blocked on Chromium response.finished() for the SSE resource.
+Its precisely identified Node/Next/Chromium process tree was terminated.
+Its remaining isolated temporary directory is:
+C:\Users\Administrator\AppData\Local\Temp\zhiyin-music21-browser-MTsRTi
+Recursive PowerShell cleanup was rejected by automatic approval review, including
+a retry after read-only verification of the exact parent and directory prefix.
+No further deletion was attempted; this is test residue, not production data.
+
+The final script checks completed SSE through actual rendered joined text,
+the input becoming enabled again and captured SDK requests; it does not rely on
+Chromium retaining a readable protocol response body for a streaming fetch.

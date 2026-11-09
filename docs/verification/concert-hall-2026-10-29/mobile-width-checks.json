@@ -1,0 +1,73 @@
+[
+  {
+    "page": "student/library",
+    "content": 375,
+    "viewport": 390
+  },
+  {
+    "page": "student/analysis",
+    "content": 375,
+    "viewport": 390
+  },
+  {
+    "page": "student/tasks",
+    "content": 375,
+    "viewport": 390
+  },
+  {
+    "page": "student/community",
+    "content": 375,
+    "viewport": 390
+  },
+  {
+    "page": "student/map",
+    "content": 375,
+    "viewport": 390
+  },
+  {
+    "page": "student/stats",
+    "content": 375,
+    "viewport": 390
+  },
+  {
+    "page": "teacher/scores",
+    "content": 375,
+    "viewport": 390
+  },
+  {
+    "page": "teacher/tasks-before-fix",
+    "content": 390,
+    "viewport": 390
+  },
+  {
+    "page": "teacher/knowledge",
+    "content": 375,
+    "viewport": 390
+  },
+  {
+    "page": "teacher/semesters",
+    "content": 375,
+    "viewport": 390
+  },
+  {
+    "page": "teacher/students",
+    "content": 390,
+    "viewport": 390
+  },
+  {
+    "page": "teacher/community",
+    "content": 375,
+    "viewport": 390
+  },
+  {
+    "page": "teacher/records",
+    "content": 375,
+    "viewport": 390
+  },
+  {
+    "page": "teacher/reviews",
+    "viewport": 390,
+    "content": 375,
+    "status": "after-fix"
+  }
+]

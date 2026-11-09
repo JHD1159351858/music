@@ -1,0 +1,557 @@
+{
+  "fixture": "Next production start on port 5008; temporary SQLite; signed synthetic student session",
+  "boundaries": {
+    "realChaoxingSSO": false,
+    "liveLLM": false,
+    "currentDataModified": false,
+    "thirdPartyIframeSDK": "inert local script responses"
+  },
+  "checks": [
+    "desktop China initially shows the complete original 2:1 image within the canvas",
+    "zoom buttons change 100% to 125% and back, keeping map and person markers synchronized",
+    "mouse wheel zooms the map and the complete-map action restores the full image",
+    "drag moves map and markers together without selecting a person; a subsequent click still opens the embedded person card",
+    "era switching preserves the view; region switches and 1440/390 resizing reset the complete map without avatar-center drift from API coordinates",
+    "390px fits both complete maps, supports button zoom/touch drag/pinch/reset, and keeps avatar centers on their API coordinates without horizontal overflow",
+    "no browser page errors or chat/model requests occur during map interactions"
+  ],
+  "screenshots": [
+    "china-complete-desktop.png",
+    "china-zoomed-dragged-desktop.png",
+    "europe-complete-desktop.png",
+    "china-complete-mobile.png",
+    "europe-complete-mobile.png"
+  ],
+  "measurements": [
+    {
+      "viewport": 1440,
+      "kind": "中国",
+      "scale": 100,
+      "image": {
+        "x": 213,
+        "y": 377.203125,
+        "width": 838,
+        "height": 419
+      },
+      "canvas": {
+        "x": 197,
+        "y": 261.703125,
+        "width": 870,
+        "height": 650
+      }
+    },
+    {
+      "viewport": 1440,
+      "kind": "中国",
+      "scale": 100,
+      "image": {
+        "x": 213,
+        "y": 377.203125,
+        "width": 838,
+        "height": 419
+      },
+      "canvas": {
+        "x": 197,
+        "y": 261.703125,
+        "width": 870,
+        "height": 650
+      }
+    },
+    {
+      "action": "drag",
+      "scale": 244,
+      "before": {
+        "image": {
+          "x": -390.94921875,
+          "y": 75.228515625,
+          "width": 2045.8984375,
+          "height": 1022.94921875
+        },
+        "marker": {
+          "x": 682.2777099609375,
+          "y": 360.7967529296875,
+          "width": 136.71875,
+          "height": 136.71875
+        },
+        "normalizedX": 0.5579877684964201,
+        "normalizedY": 0.34598747016706444
+      },
+      "after": {
+        "image": {
+          "x": -460.94921875,
+          "y": 45.228515625,
+          "width": 2045.8984375,
+          "height": 1022.94921875
+        },
+        "marker": {
+          "x": 608.8597412109375,
+          "y": 327.3787841796875,
+          "width": 143.5546875,
+          "height": 143.5546875
+        },
+        "normalizedX": 0.5579877684964201,
+        "normalizedY": 0.34598747016706444
+      },
+      "events": [
+        {
+          "type": "pointermove",
+          "target": "IMG",
+          "draggable": true,
+          "x": 750.6370849609375,
+          "y": 429.1561279296875
+        },
+        {
+          "type": "pointerdown",
+          "target": "IMG",
+          "draggable": true,
+          "x": 750.6370849609375,
+          "y": 429.1561279296875
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 741.8870849609375,
+          "y": 425.4061279296875
+        },
+        {
+          "type": "dragstart",
+          "target": "IMG",
+          "draggable": true,
+          "x": 750,
+          "y": 429
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 733.1370849609375,
+          "y": 421.6561279296875
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 724.3870849609375,
+          "y": 417.9061279296875
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 715.6370849609375,
+          "y": 414.1561279296875
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 706.8870849609375,
+          "y": 410.4061279296875
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 698.1370849609375,
+          "y": 406.6561279296875
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 689.3870849609375,
+          "y": 402.9061279296875
+        },
+        {
+          "type": "pointermove",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 680.6370849609375,
+          "y": 399.1561279296875
+        },
+        {
+          "type": "pointerup",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 680.6370849609375,
+          "y": 399.1561279296875
+        },
+        {
+          "type": "lostpointercapture",
+          "target": "BUTTON",
+          "draggable": false,
+          "x": 680.6370849609375,
+          "y": 399.1561279296875
+        }
+      ]
+    },
+    {
+      "viewport": 1440,
+      "kind": "欧洲",
+      "scale": 100,
+      "image": {
+        "x": 213,
+        "y": 377.203125,
+        "width": 838,
+        "height": 419
+      },
+      "canvas": {
+        "x": 197,
+        "y": 261.703125,
+        "width": 870,
+        "height": 650
+      }
+    },
+    {
+      "viewport": 1440,
+      "kind": "中国",
+      "scale": 100,
+      "image": {
+        "x": 213,
+        "y": 377.203125,
+        "width": 838,
+        "height": 419
+      },
+      "canvas": {
+        "x": 197,
+        "y": 261.703125,
+        "width": 870,
+        "height": 650
+      }
+    },
+    {
+      "viewport": 390,
+      "kind": "中国",
+      "scale": 100,
+      "image": {
+        "x": 33,
+        "y": 438.703125,
+        "width": 324,
+        "height": 162
+      },
+      "canvas": {
+        "x": 17,
+        "y": 339.703125,
+        "width": 356,
+        "height": 360
+      }
+    },
+    {
+      "viewport": 1440,
+      "kind": "中国",
+      "scale": 100,
+      "image": {
+        "x": 213,
+        "y": 377.203125,
+        "width": 838,
+        "height": 419
+      },
+      "canvas": {
+        "x": 197,
+        "y": 261.703125,
+        "width": 870,
+        "height": 650
+      }
+    },
+    {
+      "viewport": 390,
+      "kind": "中国",
+      "scale": 100,
+      "image": {
+        "x": 33,
+        "y": 438.703125,
+        "width": 324,
+        "height": 162
+      },
+      "canvas": {
+        "x": 17,
+        "y": 339.703125,
+        "width": 356,
+        "height": 360
+      }
+    },
+    {
+      "action": "mobile-two-finger-pinch",
+      "scale": 180
+    },
+    {
+      "viewport": 390,
+      "kind": "中国",
+      "scale": 100,
+      "image": {
+        "x": 33,
+        "y": 438.703125,
+        "width": 324,
+        "height": 162
+      },
+      "canvas": {
+        "x": 17,
+        "y": 339.703125,
+        "width": 356,
+        "height": 360
+      }
+    },
+    {
+      "viewport": 390,
+      "kind": "欧洲",
+      "scale": 100,
+      "image": {
+        "x": 33,
+        "y": 438.703125,
+        "width": 324,
+        "height": 162
+      },
+      "canvas": {
+        "x": 17,
+        "y": 339.703125,
+        "width": 356,
+        "height": 360
+      }
+    },
+    {
+      "viewport": 390,
+      "kind": "欧洲",
+      "scale": 100,
+      "image": {
+        "x": 33,
+        "y": 438.703125,
+        "width": 324,
+        "height": 162
+      },
+      "canvas": {
+        "x": 17,
+        "y": 339.703125,
+        "width": 356,
+        "height": 360
+      }
+    }
+  ],
+  "positionChecks": [
+    {
+      "stage": "desktop initial",
+      "name": "刘天华",
+      "kind": "中国",
+      "viewport": 1440,
+      "scale": 100,
+      "expected": {
+        "x": 55.8,
+        "y": 34.6
+      },
+      "actual": {
+        "x": 55.79877684964201,
+        "y": 34.59874701670644
+      }
+    },
+    {
+      "stage": "desktop button zoom",
+      "name": "刘天华",
+      "kind": "中国",
+      "viewport": 1440,
+      "scale": 125,
+      "expected": {
+        "x": 55.8,
+        "y": 34.6
+      },
+      "actual": {
+        "x": 55.79877684964201,
+        "y": 34.59874701670644
+      }
+    },
+    {
+      "stage": "desktop drag",
+      "name": "刘天华",
+      "kind": "中国",
+      "viewport": 1440,
+      "scale": 244,
+      "expected": {
+        "x": 55.8,
+        "y": 34.6
+      },
+      "actual": {
+        "x": 55.79877684964201,
+        "y": 34.59874701670644
+      }
+    },
+    {
+      "stage": "desktop initial-letter marker after era switch",
+      "name": "朱载堉",
+      "kind": "中国",
+      "viewport": 1440,
+      "scale": 244,
+      "expected": {
+        "x": 51.2,
+        "y": 42.8
+      },
+      "actual": {
+        "x": 51.1989125894988,
+        "y": 42.79907517899761
+      }
+    },
+    {
+      "stage": "desktop Europe initial",
+      "name": "肖邦",
+      "kind": "欧洲",
+      "viewport": 1440,
+      "scale": 100,
+      "expected": {
+        "x": 52.6,
+        "y": 54
+      },
+      "actual": {
+        "x": 52.599194510739856,
+        "y": 53.997613365155125
+      }
+    },
+    {
+      "stage": "desktop Europe button zoom",
+      "name": "肖邦",
+      "kind": "欧洲",
+      "viewport": 1440,
+      "scale": 125,
+      "expected": {
+        "x": 52.6,
+        "y": 54
+      },
+      "actual": {
+        "x": 52.599194510739856,
+        "y": 53.997613365155125
+      }
+    },
+    {
+      "stage": "resize 1440 to 390 resets without anchor drift",
+      "name": "刘天华",
+      "kind": "中国",
+      "viewport": 390,
+      "scale": 100,
+      "expected": {
+        "x": 55.8,
+        "y": 34.6
+      },
+      "actual": {
+        "x": 55.79668209876543,
+        "y": 34.59683641975309
+      }
+    },
+    {
+      "stage": "resize 390 to 1440 resets without anchor drift",
+      "name": "刘天华",
+      "kind": "中国",
+      "viewport": 1440,
+      "scale": 100,
+      "expected": {
+        "x": 55.8,
+        "y": 34.6
+      },
+      "actual": {
+        "x": 55.79877684964201,
+        "y": 34.59874701670644
+      }
+    },
+    {
+      "stage": "mobile China initial",
+      "name": "刘天华",
+      "kind": "中国",
+      "viewport": 390,
+      "scale": 100,
+      "expected": {
+        "x": 55.8,
+        "y": 34.6
+      },
+      "actual": {
+        "x": 55.79668209876543,
+        "y": 34.59683641975309
+      }
+    },
+    {
+      "stage": "mobile two-finger pinch",
+      "name": "刘天华",
+      "kind": "中国",
+      "viewport": 390,
+      "scale": 180,
+      "expected": {
+        "x": 55.8,
+        "y": 34.6
+      },
+      "actual": {
+        "x": 55.79667831448782,
+        "y": 34.59683199046211
+      }
+    },
+    {
+      "stage": "mobile complete-map reset",
+      "name": "刘天华",
+      "kind": "中国",
+      "viewport": 390,
+      "scale": 100,
+      "expected": {
+        "x": 55.8,
+        "y": 34.6
+      },
+      "actual": {
+        "x": 55.79668209876543,
+        "y": 34.59683641975309
+      }
+    },
+    {
+      "stage": "mobile Europe initial",
+      "name": "肖邦",
+      "kind": "欧洲",
+      "viewport": 390,
+      "scale": 100,
+      "expected": {
+        "x": 52.6,
+        "y": 54
+      },
+      "actual": {
+        "x": 52.599344135802475,
+        "y": 53.99305555555556
+      }
+    },
+    {
+      "stage": "mobile Europe button zoom",
+      "name": "肖邦",
+      "kind": "欧洲",
+      "viewport": 390,
+      "scale": 125,
+      "expected": {
+        "x": 52.6,
+        "y": 54
+      },
+      "actual": {
+        "x": 52.599344135802475,
+        "y": 53.99305555555556
+      }
+    },
+    {
+      "stage": "mobile touch drag",
+      "name": "肖邦",
+      "kind": "欧洲",
+      "viewport": 390,
+      "scale": 125,
+      "expected": {
+        "x": 52.6,
+        "y": 54
+      },
+      "actual": {
+        "x": 52.599344135802475,
+        "y": 53.99305555555556
+      }
+    },
+    {
+      "stage": "mobile Europe reset after drag",
+      "name": "肖邦",
+      "kind": "欧洲",
+      "viewport": 390,
+      "scale": 100,
+      "expected": {
+        "x": 52.6,
+        "y": 54
+      },
+      "actual": {
+        "x": 52.599344135802475,
+        "y": 53.99305555555556
+      }
+    }
+  ]
+}

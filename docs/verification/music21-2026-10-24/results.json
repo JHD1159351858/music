@@ -1,0 +1,53 @@
+{
+  "fixture": "Existing Next production build, real .venv-music21 Python, temporary SQLite, signed synthetic students, dynamic loopback ports",
+  "boundaries": {
+    "existingDataModified": false,
+    "realChaoxingSSO": false,
+    "liveLLM": false,
+    "modelIntegration": "Actual SDK HTTP requests and Next SSE against a deterministic local OpenAI-compatible fixture"
+  },
+  "checks": [
+    "Actual upload API rejects unauthenticated, wrong extension, empty and oversized files",
+    "MusicXML is the default tab; labelled file input and real authored example download are available",
+    "Real music21 returns the authored 20 notes, 3 rests, 2 parts, 4 measures and 11 harmonic slices; UI tables and provenance agree",
+    "Verified score receipt drives real browser-to-Next-to-SDK SSE without course knowledge; model prompt contains music data and no identity or secrets",
+    "Next user follow-up preserves conversation and supplies verified notes scoped to measure 2",
+    "390px results page has no horizontal page overflow",
+    "Real chat API rejects another user's receipt, modified analysis and stripped receipt before any model call",
+    "Analyze new score resets to default upload; mobile input has an accessible name and keyboard-operable picker without overflow",
+    "Browser feedback rejects wrong extension, empty and oversized files before analysis",
+    "Corrupt MusicXML returns actual parser error, retains the selected file and allows retry",
+    "Browser recovers with real Python zipfile MXL upload; actual music21 notes and harmony match XML and mobile results do not overflow",
+    "No browser page errors or local model fixture errors"
+  ],
+  "screenshots": [
+    "desktop-results.png",
+    "mobile-upload.png"
+  ],
+  "model": {
+    "requests": 3,
+    "initialSSEComplete": true,
+    "followupSSEComplete": true,
+    "initialNoteCount": 20,
+    "followupMeasures": [
+      2,
+      2
+    ],
+    "followupNoteCount": 5,
+    "courseKnowledgeRequired": false,
+    "identityOrSecretInSystemPrompt": false
+  },
+  "port": 59211,
+  "analysis": {
+    "version": "10.5.1",
+    "noteCount": 20,
+    "partCount": 2,
+    "measureCount": 4,
+    "restCount": 3,
+    "chordSlices": 11,
+    "range": "G2 — G5（36半音）",
+    "receiptPresent": true,
+    "courseSources": []
+  },
+  "passed": true
+}

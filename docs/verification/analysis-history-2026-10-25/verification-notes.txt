@@ -1,0 +1,30 @@
+2026-10-25 analysis history integration verification
+
+Final command: node scripts/testing/music21-smoke.mjs
+PLAYWRIGHT_MODULE_PATH was set to the installed bundled Playwright package.
+Result: PASS, exit 0, 18 checks. See results.json and checks.log.
+The existing music21 acceptance checks remain included in the extended script.
+
+Verified with the actual production Next build and music21 10.5.1:
+- MusicXML analysis saves a history summary and refreshes the visible panel.
+- A browser reload followed by opening history uses GET only and restores the
+  exact saved result, charts and tables, with a renewed signed analysis receipt.
+- Reopening starts a fresh working browser SSE conversation without duplicate
+  analysis POSTs or saved rows.
+- Another signed student sees no summaries and receives 404 for the saved id.
+- Twenty-one small ABC analyses also save, making 23 records across pages of
+  20 and 3; summaries contain only the eight documented summary fields.
+- The visible load-more control loads all 23 actions once without mobile overflow.
+- A real stop/start of the owned Next process using the same isolated SQLite
+  directory preserves both summary pages and the complete original result.
+- Desktop and 390px screenshots were inspected after capture.
+
+The model SDK made four actual loopback HTTP requests to a deterministic SSE
+fixture. model-prompts.json records those prompts, including the restored score.
+These checks verify application integration and transport, not live model quality
+or availability, real Chaoxing SSO, or a remote database deployment.
+Existing application data was not used or modified. Both test runs closed their
+owned browser/server and cleaned only their newly created temporary directory.
+
+Text-analysis POST responses may omit the optional fileName when there is no
+uploaded file. History list summaries normalize that field to null, as verified.

@@ -1,0 +1,72 @@
+[
+  {
+    "file": "01-covers-and-score-management.png",
+    "width": 2006,
+    "height": 784,
+    "bytes": 1731109,
+    "sha256": "e6a4d732004bfcaa1d1371682b2d55b73309cb91bc190527ddeaa4b94a36e85d"
+  },
+  {
+    "file": "02-student-home-analysis.png",
+    "width": 2006,
+    "height": 784,
+    "bytes": 1724171,
+    "sha256": "f681c3294292aed0b1ede82b89ad0a17c4994935d58335f142b79173e8ed2bda"
+  },
+  {
+    "file": "03-student-tasks-submission-v2.png",
+    "width": 2006,
+    "height": 784,
+    "bytes": 1775721,
+    "sha256": "d4ffc44f655aebabc25e4b3300e9eb23097c1a918dda9bb8432d41e05275fa7e"
+  },
+  {
+    "file": "04-student-community-assistant-v2.png",
+    "width": 2007,
+    "height": 784,
+    "bytes": 1892887,
+    "sha256": "8a0239b15b7825c6deef9faf43281478e80a9e0ef7bf407fee9f86211ab7f258"
+  },
+  {
+    "file": "05-student-map-stats.png",
+    "width": 2006,
+    "height": 784,
+    "bytes": 1835184,
+    "sha256": "4eba5a74b35abb6ee0bbeec971c55c36607391f80ad0c85b59e3ea7e768fc29c"
+  },
+  {
+    "file": "06-student-practice-archive-v2.png",
+    "width": 2006,
+    "height": 784,
+    "bytes": 1750452,
+    "sha256": "9470c7964d76bc774585b64e056dacb4f9ddc567be9a40daa455e19caddb8ec1"
+  },
+  {
+    "file": "07-teacher-tasks-reviews.png",
+    "width": 2006,
+    "height": 784,
+    "bytes": 1533440,
+    "sha256": "63464223fd1bd64de1024b66c3f7236bca539fe7d5d048ef22365eb73d5b5bf2"
+  },
+  {
+    "file": "08-teacher-classes-semesters-v2.png",
+    "width": 2006,
+    "height": 784,
+    "bytes": 1582203,
+    "sha256": "7eb8c26c21fa0260418abbff828e39e9b7a314cf4a589a56064cf651d9011c4f"
+  },
+  {
+    "file": "09-teacher-knowledge-community.png",
+    "width": 2006,
+    "height": 784,
+    "bytes": 1573481,
+    "sha256": "498e526f1f86d92c6207c65077d70ea7479b490bf02e6b421a0f2a2e2718f857"
+  },
+  {
+    "file": "10-teacher-records-map.png",
+    "width": 2006,
+    "height": 784,
+    "bytes": 1633245,
+    "sha256": "73d8415652a2fa8caaac37490a91f4f025e2691d6e650343369a0b7d0a354990"
+  }
+]
