@@ -1,3 +1,11 @@
-export const SCORE_TYPES = ['协奏曲', '圆舞曲', '夜曲', '弹奏曲', '练习曲', '奏鸣曲', '前奏曲', '赋格', '变奏曲', '其他'] as const
+export const SCORE_TYPES = ['练习曲', '复调', '奏鸣曲', '乐曲', '歌曲', '中小学音乐教材'] as const
+export const SCORE_PERIODS = ['18世纪', '19世纪', '20世纪'] as const
+export const SCORE_STYLES = ['文艺复兴', '巴洛克', '古典', '浪漫', '20世纪', '中国'] as const
+
 export type ScoreType = typeof SCORE_TYPES[number]
-export const SCORE_PERIOD_MAX_LENGTH = 100
+export type ScorePeriod = typeof SCORE_PERIODS[number]
+export type ScoreStyle = typeof SCORE_STYLES[number]
+
+export function scoreClassificationValue<Value extends string>(options: readonly Value[], value: string | null | undefined): Value | null {
+  return options.find(option => option === value) ?? null
+}

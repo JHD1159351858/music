@@ -5,10 +5,15 @@ import { retrieveKnowledge } from '@/lib/course-knowledge'
 import { findMapMusician } from '@/lib/map-musicians'
 import { verifyScoreAnalysisReceipt } from '@/lib/score-analysis-receipt'
 import { scoreAnalysisContext } from '@/lib/score-analysis-context'
+import { getAnalysisHistoryResult } from '@/lib/analysis-history'
+import { scoreExplanationResponse } from '@/lib/score-explanation-server'
 
 const chatSchema = z.object({
   messages: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().trim().min(1).max(6000) })).min(1).max(40),
-  context: z.object({ kind: z.enum(['score', 'composer']), composerId: z.string().max(80).optional(), name: z.string().max(160).optional(), analysis: z.record(z.string(), z.unknown()).optional() }).optional(),
+  context: z.union([
+    z.object({ kind: z.enum(['score', 'composer']), composerId: z.string().max(80).optional(), name: z.string().max(160).optional(), analysis: z.record(z.string(), z.unknown()).optional() }),
+    z.object({ kind: z.literal('score-intro'), historyId: z.uuid() }),
+  ]).optional(),
 })
 
 export async function POST(request: Request) {
@@ -16,6 +21,10 @@ export async function POST(request: Request) {
     const raw = await readJson(request)
     const { user, supabase } = await actor(request, raw)
     const { messages, context } = chatSchema.parse(raw)
+    if (context?.kind === 'score-intro') {
+      const result = await getAnalysisHistoryResult(supabase, user.id, context.historyId)
+      return scoreExplanationResponse(request.signal, result, supabase, user.id, messages)
+    }
     const score = context?.kind === 'score' && context.analysis ? verifyScoreAnalysisReceipt(context.analysis, user.id) : null
     if (context?.kind === 'score' && context.analysis && ('music21' in context.analysis || 'analysisReceipt' in context.analysis) && !score) throw new ApiError('乐谱分析凭据已失效或结果已改变，请重新上传分析后再提问', 422)
     const question = [...messages].reverse().find(message => message.role === 'user')?.content ?? ''

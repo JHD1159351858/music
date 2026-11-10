@@ -6,13 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { ChatPanel } from '@/components/chat-panel'
 import { AnalysisHistoryPanel } from '@/components/analysis/history-panel'
-import { ScoreGuidePanel } from '@/components/analysis/score-guide-panel'
+import { ScoreExplanationPanel } from '@/components/analysis/score-explanation-panel'
 import type { AnalysisResult } from '@/lib/score-analysis'
+import { getScorePitchClasses } from '@/lib/score-pitch-classes'
 import {
   BarChart,
   Bar,
+  Cell,
+  LabelList,
   XAxis,
   YAxis,
   Tooltip,
@@ -34,6 +36,16 @@ import {
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
+
+const tablePreviewClass = 'max-h-60 overflow-auto rounded-md border border-border focus-visible:outline-ring [&_[data-slot=table-container]]:overflow-visible [&_td]:py-1.5 [&_th]:h-8'
+
+function PitchClassTick({ x, y, payload }: { x?: number; y?: number; payload?: { value: string } }) {
+  if (!payload || x === undefined || y === undefined) return null
+  const [first, second] = payload.value.split('/')
+  return <text x={x} y={y} dy={10} textAnchor="middle" fill="var(--muted-foreground)" fontSize={11}>
+    {first}{second && <><tspan>/</tspan><tspan x={x} dy={12}>{second}</tspan></>}
+  </text>
+}
 
 export default function AnalysisPage() {
   const { user } = useRequireUser()
@@ -59,12 +71,6 @@ function AnalysisWorkspace({ isStudent }: { isStudent: boolean }) {
   const requestInFlight = useRef(false)
   const requestVersion = useRef(0)
   const activeRequest = useRef<AbortController | null>(null)
-  const chatContext = useMemo(() => result ? {
-    kind: 'score' as const,
-    name: result.title ?? undefined,
-    analysis: result as unknown as Record<string, unknown>,
-  } : undefined, [result])
-
   useEffect(() => () => {
     ++requestVersion.current
     activeRequest.current?.abort()
@@ -207,29 +213,24 @@ function AnalysisWorkspace({ isStudent }: { isStudent: boolean }) {
     ? [
         { icon: KeyRound, label: result.music21 ? '谱面声明调性' : '调性判断', value: result.music21 ? result.music21.declaredKeys.join(' → ') || '未标注' : result.key ?? '未识别' },
         { icon: AudioLines, label: '音域跨度', value: result.range ?? '未识别' },
-        { icon: Hash, label: '音符总数', value: result.noteCount === null ? '未识别' : String(result.noteCount) },
         { icon: Palette, label: '和弦色彩倾向', value: result.chordColor ?? '未识别' },
         ...(result.music21 ? [
           { icon: KeyRound, label: '算法推断调性', value: result.music21.estimatedKey ? `${result.music21.estimatedKey.name}${result.music21.estimatedKey.correlation === null ? '' : `（相关系数 ${result.music21.estimatedKey.correlation.toFixed(3)}）`}` : '无法推断' },
           { icon: Music2, label: '声部数', value: String(result.music21.partCount) },
-          { icon: Hash, label: '小节数', value: String(result.music21.measureCount) },
           { icon: Hash, label: '休止符数', value: String(result.music21.restCount) },
-          { icon: Music2, label: '拍号', value: result.music21.timeSignatures.join('、') || '未标注' },
           { icon: AudioLines, label: '速度标记', value: result.music21.tempos.length ? `${result.music21.tempos.join('、')} BPM` : '未标注' },
         ] : []),
       ]
     : []
 
-  const histogram = result
-    ? Object.entries(result.pitchHistogram ?? {}).map(([name, count]) => ({ name, 次数: count }))
-    : []
+  const histogram = useMemo(() => result ? getScorePitchClasses(result) : null, [result])
 
   return (
     <div className={`space-y-6 ${isStudent ? 'concert-module concert-analysis' : ''}`}>
       <header>
         <h1 className="font-serif text-3xl font-bold text-foreground">乐谱分析</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          上传 MusicXML 乐谱，由 music21 解析实际音符、节拍与和声；乐曲背景仅引用已收录课程资料
+          上传或粘贴乐谱，查看音符、节拍与和声。右侧 AI 讲解介绍作品背景，并推荐可核验的拓展资料。
         </p>
       </header>
 
@@ -396,66 +397,68 @@ function AnalysisWorkspace({ isStudent }: { isStudent: boolean }) {
 
             {result.music21 && <>
               <section className="min-w-0 rounded-xl border border-border bg-card p-5">
-                <h3 className="font-serif text-base font-semibold">音符解析预览</h3>
+                <h3 id="note-analysis-preview" className="font-serif text-base font-semibold">音符解析预览</h3>
                 <p className="mb-4 mt-2 text-xs text-muted-foreground">展示前 {Math.min(40, result.music21.notes.length)} / {result.music21.notes.length} 个音符。起拍位置与时值均以四分音符为 1；“—”表示谱面未提供。</p>
-                <Table>
-                  <TableHeader><TableRow><TableHead>音符</TableHead><TableHead>声部</TableHead><TableHead>小节</TableHead><TableHead>拍位</TableHead><TableHead>起拍位置</TableHead><TableHead>时值</TableHead><TableHead>声线</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {result.music21.notes.slice(0, 40).map((note) => <TableRow key={note.index}>
-                      <TableCell>{note.note}</TableCell><TableCell>{note.part}</TableCell><TableCell>{note.measure ?? '—'}</TableCell><TableCell>{note.beat === null ? '—' : Number(note.beat.toFixed(3))}</TableCell><TableCell>{Number(note.offset.toFixed(3))}</TableCell><TableCell>{Number(note.duration.toFixed(3))}</TableCell><TableCell>{note.voice ?? '—'}</TableCell>
-                    </TableRow>)}
-                    {!result.music21.notes.length && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">暂无有音高的音符</TableCell></TableRow>}
-                  </TableBody>
-                </Table>
+                <div role="region" aria-labelledby="note-analysis-preview" tabIndex={0} className={tablePreviewClass}>
+                  <Table>
+                    <TableHeader className="sticky top-0 z-10 bg-card"><TableRow><TableHead>音符</TableHead><TableHead>声部</TableHead><TableHead>小节</TableHead><TableHead>拍位</TableHead><TableHead>起拍位置</TableHead><TableHead>时值</TableHead><TableHead>声线</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      {result.music21.notes.slice(0, 40).map((note) => <TableRow key={note.index}>
+                        <TableCell>{note.note}</TableCell><TableCell>{note.part}</TableCell><TableCell>{note.measure ?? '—'}</TableCell><TableCell>{note.beat === null ? '—' : Number(note.beat.toFixed(3))}</TableCell><TableCell>{Number(note.offset.toFixed(3))}</TableCell><TableCell>{Number(note.duration.toFixed(3))}</TableCell><TableCell>{note.voice ?? '—'}</TableCell>
+                      </TableRow>)}
+                      {!result.music21.notes.length && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">暂无有音高的音符</TableCell></TableRow>}
+                    </TableBody>
+                  </Table>
+                </div>
               </section>
               <section className="min-w-0 rounded-xl border border-border bg-card p-5">
-                <h3 className="font-serif text-base font-semibold">和声解析预览</h3>
+                <h3 id="harmony-analysis-preview" className="font-serif text-base font-semibold">和声解析预览</h3>
                 <p className="mb-4 mt-2 text-xs text-muted-foreground">展示前 {Math.min(40, result.music21.chords.length)} / {result.music21.chords.length} 个和声切片。由同时发声的音组合识别，罗马数字为算法参考。</p>
-                <Table>
-                  <TableHeader><TableRow><TableHead>小节 / 拍位</TableHead><TableHead>起拍位置</TableHead><TableHead>构成音</TableHead><TableHead>和弦名称</TableHead><TableHead>罗马数字</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {result.music21.chords.slice(0, 40).map((chord, index) => <TableRow key={index}>
-                      <TableCell>{chord.measure ?? '—'} / {chord.beat === null ? '—' : Number(chord.beat.toFixed(3))}</TableCell><TableCell>{Number(chord.offset.toFixed(3))}</TableCell><TableCell>{chord.notes.join('、')}</TableCell><TableCell>{chord.name}</TableCell><TableCell>{chord.romanNumeral ?? '—'}</TableCell>
-                    </TableRow>)}
-                    {!result.music21.chords.length && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">暂无可识别的和声切片</TableCell></TableRow>}
-                  </TableBody>
-                </Table>
+                <div role="region" aria-labelledby="harmony-analysis-preview" tabIndex={0} className={tablePreviewClass}>
+                  <Table>
+                    <TableHeader className="sticky top-0 z-10 bg-card"><TableRow><TableHead>小节 / 拍位</TableHead><TableHead>起拍位置</TableHead><TableHead>构成音</TableHead><TableHead>和弦名称</TableHead><TableHead>罗马数字</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      {result.music21.chords.slice(0, 40).map((chord, index) => <TableRow key={index}>
+                        <TableCell>{chord.measure ?? '—'} / {chord.beat === null ? '—' : Number(chord.beat.toFixed(3))}</TableCell><TableCell>{Number(chord.offset.toFixed(3))}</TableCell><TableCell>{chord.notes.join('、')}</TableCell><TableCell>{chord.name}</TableCell><TableCell>{chord.romanNumeral ?? '—'}</TableCell>
+                      </TableRow>)}
+                      {!result.music21.chords.length && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">暂无可识别的和声切片</TableCell></TableRow>}
+                    </TableBody>
+                  </Table>
+                </div>
               </section>
             </>}
 
             <div className="rounded-xl border border-border bg-card p-5">
-              <h3 className="mb-4 font-serif text-base font-semibold text-foreground">音名出现次数</h3>
-              {histogram.length ? <div className="h-52">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={histogram}>
-                    <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} />
-                    <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} />
-                    <Tooltip
-                      contentStyle={{
-                        background: 'var(--card)',
-                        border: '1px solid var(--border)',
-                        borderRadius: 'var(--radius)',
-                        color: 'var(--foreground)',
-                      }}
-                    />
-                    <Bar dataKey="次数" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div> : <p className="py-8 text-center text-sm text-muted-foreground">未识别，暂无可靠统计数据</p>}
+              <h3 className="mb-2 font-serif text-base font-semibold text-foreground">音名出现次数</h3>
+              {histogram ? <>
+                <p className="mb-3 text-xs text-muted-foreground">按钢琴的十二个音级统计，跨八度累加，同音异名合并。{histogram.microtones > 0 && `另有 ${histogram.microtones} 个微分音未计入。`}</p>
+                <div className="mb-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-chart-1" aria-hidden="true" />白键音级</span>
+                  <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-chart-4" aria-hidden="true" />黑键音级</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <div className="h-56 min-w-88">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={histogram.classes} margin={{ top: 16, right: 5, left: 0, bottom: 0 }}>
+                        <XAxis dataKey="name" stroke="var(--muted-foreground)" tick={<PitchClassTick />} interval={0} height={34} tickLine={false} />
+                        <YAxis stroke="var(--muted-foreground)" fontSize={11} width={42} tickLine={false} allowDecimals={false} domain={[0, (max: number) => Math.max(1, max)]} />
+                        <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', color: 'var(--foreground)' }} />
+                        <Bar dataKey="count" name="次数" radius={[5, 5, 0, 0]} isAnimationActive={false}>
+                          {histogram.classes.map(pitch => <Cell key={pitch.name} fill={pitch.key === 'black' ? 'var(--chart-4)' : 'var(--chart-1)'} />)}
+                          <LabelList dataKey="count" position="top" fill="var(--foreground)" fontSize={10} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </> : <p className="py-8 text-center text-sm text-muted-foreground">{result.historyId ? '此记录缺少完整音高明细，重新分析可查看十二音级统计。' : '未识别到可用音高，暂无可靠统计数据。'}</p>}
             </div>
 
-            <ScoreGuidePanel key={resultSession} result={result} />
           </div>
 
           {/* 右侧：对话窗口 */}
           <div className="lg:col-span-2">
-            <ChatPanel
-              key={resultSession}
-              className="h-[640px]"
-              context={chatContext}
-              autoPrompt={`请先依据这份乐谱${result.title ? `《${result.title}》` : ''}的实际解析统计，说明音域、音符、节拍与和声特点，并给出具体练习参考；区分谱面声明调性与算法推断，图片识别须提示复核。作品及作曲家背景、创作年代和所属时期，仅在已收录课程资料有来源时介绍，未收录则明确说明，不作推测。`}
-              placeholder="就这份乐谱继续提问…"
-            />
+            <ScoreExplanationPanel key={resultSession} result={result} className="h-[640px]" />
           </div>
         </div>
       )}

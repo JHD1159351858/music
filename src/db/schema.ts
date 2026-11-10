@@ -58,6 +58,7 @@ export const scores = pgTable(
     difficulty: text('difficulty').notNull(), // beginner | intermediate | advanced
     score_type: text('score_type'),
     period: text('period'),
+    score_style: text('score_style'),
     category: text('category').default('foreign').notNull(), // domestic | foreign
     genre_id: varchar('genre_id', { length: 36 }).references(() => scoreGenres.id, { onDelete: 'set null' }),
     published: boolean('published').default(false).notNull(),

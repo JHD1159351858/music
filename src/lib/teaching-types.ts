@@ -1,4 +1,4 @@
-import type { ScoreType } from './score-classification'
+import type { ScoreStyle } from './score-classification'
 
 export type UserRole = 'teacher' | 'student'
 export interface TeachingProfile { id: string; nickname: string; role: UserRole; class_name: string | null }
@@ -15,8 +15,9 @@ export interface TeachingScore {
   title: string
   composer: string
   category: 'domestic' | 'foreign'
-  score_type: ScoreType | null
+  score_type: string | null
   period: string | null
+  score_style: ScoreStyle | null
   tips: string | null
   image_url: string | null
   file_id: string | null

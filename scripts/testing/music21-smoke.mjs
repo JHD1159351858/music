@@ -18,7 +18,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright')
 const python = path.join(root, '.venv-music21', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python')
 await Promise.all([access(path.join(root, '.next/BUILD_ID')), access(python), access(chromium.executablePath())])
 const directory = await mkdtemp(path.join(tmpdir(), 'zhiyin-music21-browser-'))
-const output = path.join(root, 'docs/verification/analysis-history-2026-10-25')
+const output = process.env.MUSIC21_SMOKE_OUTPUT_DIR || path.join(root, 'docs/verification/analysis-history-2026-10-25')
 await mkdir(output, { recursive: true })
 const secret = randomBytes(48).toString('base64url')
 const student = 's0000000-0000-0000-0000-000000000001'
@@ -86,13 +86,6 @@ function scoreContext(prompt) {
   assert.ok(match, 'Verified score data must reach the actual model SDK request')
   return JSON.parse(match[1])
 }
-async function waitFor(predicate, description) {
-  const deadline = Date.now() + 15000
-  while (!predicate()) {
-    assert.ok(Date.now() < deadline, `${description} timed out`)
-    await new Promise(resolve => setTimeout(resolve, 50))
-  }
-}
 async function screenshot(page, name) {
   await page.screenshot({ path: path.join(output, name), fullPage: true })
   evidence.screenshots.push(name)
@@ -102,19 +95,33 @@ function snapshot(analysis) {
   const result = { ...analysis }
   delete result.analysisReceipt
   delete result.historyId
+  // Opening the explanation may independently refresh the cached guide.
+  delete result.scoreGuide
   return result
 }
 function historySummaries(items) {
   const fields = ['id', 'title', 'composer', 'fileName', 'provenance', 'engine', 'noteCount', 'createdAt'].sort()
   for (const item of items) assert.deepEqual(Object.keys(item).sort(), fields, 'History lists must contain summaries only')
 }
-async function completedChat(page, copies) {
-  const answer = '受控 SSE 讲解：已收到 music21 实际音符与和声。以上建议仅供练习参考，具体以任课教师指导为准。'
-  await page.getByText(answer, { exact: true }).nth(copies - 1).waitFor()
-  await page.waitForFunction(() => {
-    const input = document.querySelector('input[placeholder="就这份乐谱继续提问…"]')
-    return input instanceof HTMLInputElement && !input.disabled
-  }, undefined, { timeout: 15000 })
+const introQuestion = '请介绍这首乐曲并推荐可核验的拓展资料。'
+const introPlaceholder = '继续问作品、作曲家或欣赏建议…'
+const fixtureIntro = '受控作品背景说明。'
+const fixtureFollowup = '受控作品欣赏建议：留意乐句间的呼应。'
+
+async function completedIntroduction(page, response, analysis) {
+  assert.equal(response.status(), 200)
+  assert.match(response.headers()['content-type'], /text\/event-stream/)
+  assert.deepEqual(response.request().postDataJSON(), {
+    context: { kind: 'score-intro', historyId: analysis.historyId }, messages: [{ role: 'user', content: introQuestion }],
+  })
+  const introduction = page.locator('[data-role=assistant]').first()
+  await introduction.filter({ hasText: `《${analysis.title}》导读` }).waitFor()
+  const content = await introduction.innerText()
+  for (const field of ['作品背景', '作曲家介绍', '创作年代', '所属时期', fixtureIntro]) assert.ok(content.includes(field))
+  assert.doesNotMatch(content, /音域|音符总数|小节数|拍号/)
+  assert.equal(await page.getByText(introQuestion, { exact: true }).count(), 0)
+  await page.getByRole('link', { name: 'B站搜索入口' }).waitFor()
+  await page.getByRole('link', { name: '抖音搜索入口' }).waitFor()
 }
 
 try {
@@ -129,13 +136,25 @@ try {
   mock = createServer(async (incoming, response) => {
     try {
       assert.equal(incoming.method, 'POST')
-      assert.equal(incoming.url, '/chat/completions')
       const chunks = []
       for await (const chunk of incoming) chunks.push(chunk)
       const body = JSON.parse(Buffer.concat(chunks).toString('utf8'))
-      assert.equal(body.stream, true)
+      if (incoming.url === '/search/query') {
+        assert.equal(typeof body.query, 'string')
+        response.writeHead(200, { 'Content-Type': 'application/json' })
+        response.end(JSON.stringify({ code: 200, data: [] }))
+        return
+      }
+      assert.equal(incoming.url, '/chat/completions')
       assert.ok(Array.isArray(body.messages))
       requests.push(body)
+      if (body.stream !== true) {
+        const prompt = body.messages[0].content
+        const content = prompt.includes('缺少材料') ? JSON.stringify({ workBackground: fixtureIntro }) : fixtureFollowup
+        response.writeHead(200, { 'Content-Type': 'application/json' })
+        response.end(JSON.stringify({ choices: [{ message: { content } }] }))
+        return
+      }
       response.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache' })
       response.write('data: {"choices":[{"delta":{"content":"受控 SSE 讲解："}}]}\n\n')
       await new Promise(resolve => setTimeout(resolve, 30))
@@ -214,8 +233,16 @@ try {
   assert.equal(await harmonySection.locator('tbody tr').count(), 11)
   await notesSection.getByRole('cell', { name: 'C4', exact: true }).first().waitFor()
   await page.getByText(`指标来源：music21 ${analysis.music21.version} · MusicXML 实际解析`, { exact: true }).waitFor()
-  assert.equal(await page.getByText('未识别（课程资料未收录）', { exact: true }).count(), 5)
-  pass('Real music21 returns the authored 20 notes, 3 rests, 2 parts, 4 measures and 11 harmonic slices; UI tables and provenance agree')
+  for (const card of ['音符总数', '小节数', '拍号']) assert.equal(await page.getByText(card, { exact: true }).count(), 0)
+  const pitchChart = page.getByRole('heading', { name: '音名出现次数', exact: true }).locator('..')
+  const ticks = pitchChart.locator('.recharts-xAxis .recharts-cartesian-axis-tick text')
+  await ticks.last().waitFor()
+  assert.deepEqual(await ticks.allTextContents(), ['C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭', 'A', 'A♯/B♭', 'B'])
+  const pitchCounts = await pitchChart.locator('.recharts-label-list .recharts-label').allTextContents()
+  assert.equal(pitchCounts.length, 12)
+  assert.equal(pitchCounts.map(Number).reduce((sum, count) => sum + count, 0), analysis.noteCount)
+  assert.ok(pitchCounts.includes('0'))
+  pass('Real music21 returns the authored metrics; UI preserves its detail tables and renders twelve exact chromatic counts, including zeros')
   const initialHistory = await (await request('/api/analysis/history?page=1')).json()
   historySummaries(initialHistory.items)
   assert.equal(initialHistory.items.length, 1)
@@ -226,12 +253,26 @@ try {
   await page.getByRole('region', { name: '分析历史', exact: true }).getByRole('button', { name: `打开分析：${analysis.title}（${analysis.fileName}）`, exact: true }).waitFor()
   pass('Successful XML analysis automatically saves one owner history summary and refreshes the visible history panel')
 
-  const chatResponse = await chatEvent
-  assert.equal(chatResponse.status(), 200)
-  assert.match(chatResponse.headers()['content-type'], /text\/event-stream/)
-  await completedChat(page, 1)
-  await waitFor(() => requests.length === 1, 'Initial model call')
-  const systemPrompt = requests[0].messages[0].content
+  await completedIntroduction(page, await chatEvent, analysis)
+  pass('Analysis opens an owner-scoped work introduction with four fields and two platform search links, without echoing the opening prompt or score statistics')
+
+  const followupEvent = page.waitForResponse(response => response.url() === base + '/api/chat')
+  const question = '这首作品可以怎样欣赏？'
+  await page.getByPlaceholder(introPlaceholder, { exact: true }).fill(question)
+  await page.getByPlaceholder(introPlaceholder, { exact: true }).press('Enter')
+  const followupResponse = await followupEvent
+  assert.equal(followupResponse.status(), 200)
+  const followupRequest = followupResponse.request().postDataJSON()
+  assert.deepEqual(followupRequest.context, { kind: 'score-intro', historyId: analysis.historyId })
+  assert.equal(followupRequest.messages.at(-1).content, question)
+  assert.ok(followupRequest.messages.some(message => message.role === 'assistant' && message.content.includes(fixtureIntro)))
+  await page.getByText(fixtureFollowup, { exact: false }).waitFor()
+  pass('Work-introduction follow-up preserves the conversation and shows the deterministic model response')
+
+  const chatBody = { messages: [{ role: 'user', content: '第2小节' }], context: { kind: 'score', name: analysis.title, analysis } }
+  const fullScoreChat = await request('/api/chat', { method: 'POST', body: { ...chatBody, messages: [{ role: 'user', content: '请概述这份谱面' }] } })
+  assert.match(await fullScoreChat.text(), /受控 SSE 讲解/)
+  const systemPrompt = requests.at(-1).messages[0].content
   const initialContext = scoreContext(systemPrompt)
   assert.equal(initialContext.noteCount, 20)
   assert.equal(initialContext.notes.length, 20)
@@ -239,33 +280,26 @@ try {
   assert.equal(initialContext.requestedMeasures, null)
   assert.ok(!systemPrompt.includes('<course-material'))
   for (const sensitive of [secret, student, other, 'analysisReceipt', 'ownerId', 'local-fixture-only']) assert.ok(!systemPrompt.includes(sensitive))
-  pass('Verified score receipt drives real browser-to-Next-to-SDK SSE without course knowledge; model prompt contains music data and no identity or secrets')
-
-  const followupEvent = page.waitForResponse(response => response.url() === base + '/api/chat')
-  await page.getByPlaceholder('就这份乐谱继续提问…', { exact: true }).fill('请说明第2小节有哪些音符？')
-  await page.getByPlaceholder('就这份乐谱继续提问…', { exact: true }).press('Enter')
-  const followupResponse = await followupEvent
-  assert.equal(followupResponse.status(), 200)
-  await completedChat(page, 2)
-  await waitFor(() => requests.length === 2, 'Measure follow-up model call')
-  const followupContext = scoreContext(requests[1].messages[0].content)
+  const measureChat = await request('/api/chat', { method: 'POST', body: chatBody })
+  assert.match(await measureChat.text(), /受控 SSE 讲解/)
+  const followupContext = scoreContext(requests.at(-1).messages[0].content)
   assert.deepEqual(followupContext.requestedMeasures, [2, 2])
   assert.equal(followupContext.notes.length, 5)
   assert.ok(followupContext.notes.every(note => note.measure === 2))
-  assert.ok(requests[1].messages.some(message => message.role === 'assistant' && message.content.includes('受控 SSE 讲解')))
-  evidence.model = { requests: requests.length, initialSSEComplete: true, followupSSEComplete: true, initialNoteCount: initialContext.notes.length, followupMeasures: followupContext.requestedMeasures, followupNoteCount: followupContext.notes.length, courseKnowledgeRequired: false, identityOrSecretInSystemPrompt: false }
-  pass('Next user follow-up preserves conversation and supplies verified notes scoped to measure 2')
+  evidence.model = { requests: requests.length, introSSEComplete: true, introFollowupComplete: true, initialNoteCount: initialContext.notes.length, followupMeasures: followupContext.requestedMeasures, followupNoteCount: followupContext.notes.length, courseKnowledgeRequired: false, identityOrSecretInSystemPrompt: false }
+  pass('The existing receipt-verified score API continues streaming real parsed notes and scopes measure queries to the requested data')
   await page.setViewportSize({ width: 390, height: 844 })
   await noOverflow(page)
   pass('390px results page has no horizontal page overflow')
 
-  const chatBody = { messages: [{ role: 'user', content: '第2小节' }], context: { kind: 'score', name: analysis.title, analysis } }
+  const modelCallsBeforeRejection = requests.length
+  await request('/api/chat', { method: 'POST', userId: other, body: { messages: [{ role: 'user', content: introQuestion }], context: { kind: 'score-intro', historyId: analysis.historyId } }, status: 404 })
   await request('/api/chat', { method: 'POST', userId: other, body: chatBody, status: 422 })
   await request('/api/chat', { method: 'POST', body: { ...chatBody, context: { ...chatBody.context, analysis: { ...analysis, noteCount: 999 } } }, status: 422 })
   const unsignedAnalysis = { ...analysis }
   delete unsignedAnalysis.analysisReceipt
   await request('/api/chat', { method: 'POST', body: { ...chatBody, context: { ...chatBody.context, analysis: unsignedAnalysis } }, status: 422 })
-  assert.equal(requests.length, 2)
+  assert.equal(requests.length, modelCallsBeforeRejection)
   pass('Real chat API rejects another user\'s receipt, modified analysis and stripped receipt before any model call')
 
   await page.getByRole('button', { name: '分析新乐谱', exact: true }).click()
@@ -307,9 +341,7 @@ try {
   assert.deepEqual(compressed.music21.notes, analysis.music21.notes)
   assert.deepEqual(compressed.music21.chords, analysis.music21.chords)
   await page.getByRole('heading', { name: analysis.title, exact: true }).waitFor()
-  assert.equal((await compressedChatEvent).status(), 200)
-  await completedChat(page, 1)
-  await waitFor(() => requests.length === 3, 'Replacement MXL model call')
+  await completedIntroduction(page, await compressedChatEvent, compressed)
   await noOverflow(page)
   evidence.model.requests = requests.length
   pass('Browser recovers with real Python zipfile MXL upload; actual music21 notes and harmony match XML and mobile results do not overflow')
@@ -341,19 +373,15 @@ try {
   await page.getByRole('heading', { name: analysis.title, exact: true }).waitFor()
   assert.equal(await notesSection.locator('tbody tr').count(), 20)
   assert.equal(await harmonySection.locator('tbody tr').count(), 11)
-  assert.equal((await restoredChatEvent).status(), 200)
-  await completedChat(page, 1)
-  await waitFor(() => requests.length === 4, 'Restored score model call')
-  const restoredContext = scoreContext(requests[3].messages[0].content)
-  assert.deepEqual(restoredContext, initialContext)
-  assert.equal(requests[3].messages.length, 2, 'Opening a saved result starts a fresh grounded chat')
+  await completedIntroduction(page, await restoredChatEvent, restored)
+  assert.deepEqual(await pitchChart.locator('.recharts-label-list .recharts-label').allTextContents(), pitchCounts)
   assert.equal(analysisPosts, postsBeforeOpen, 'Opening history must not submit another analysis')
   const historyAfterOpen = await (await request('/api/analysis/history?page=1')).json()
   assert.deepEqual(historyAfterOpen.items.map(item => item.id), historyBeforeOpen.items.map(item => item.id))
   await noOverflow(page)
   await screenshot(page, 'desktop-restored-history.png')
   evidence.model.requests = requests.length
-  evidence.history = { automaticSave: true, restoredSnapshotEqual: true, receiptRenewed: true, getOnlyRestore: true, noDuplicateAfterOpen: true, restoredChatNotes: restoredContext.notes.length, ownerPrivacy: true }
+  evidence.history = { automaticSave: true, restoredSnapshotEqual: true, receiptRenewed: true, getOnlyRestore: true, noDuplicateAfterOpen: true, restoredIntroduction: true, ownerPrivacy: true }
   pass('Reload and open uses GET only, restores the exact saved charts with a fresh receipt and fresh working SSE chat, and creates no duplicate record')
 
   const abcIds = []

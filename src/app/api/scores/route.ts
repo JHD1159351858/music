@@ -5,11 +5,11 @@ import { refreshScoreFiles } from '@/lib/teaching-files'
 import { getScorePages, type ScoreFiles } from '@/lib/score-pages'
 import type { TeachingScore } from '@/lib/teaching-types'
 
-type ScoreIntent = Pick<TeachingScore, 'title' | 'composer' | 'category' | 'published'> & Pick<Partial<TeachingScore>, 'score_type' | 'period' | 'tips' | 'target_classes'> & ScoreFiles
+type ScoreIntent = Pick<TeachingScore, 'title' | 'composer' | 'category' | 'published'> & Pick<Partial<TeachingScore>, 'score_type' | 'period' | 'score_style' | 'tips' | 'target_classes'> & ScoreFiles
 function savedIntent(score: ScoreIntent): string {
   return JSON.stringify({
     title: score.title, composer: score.composer, category: score.category,
-    score_type: score.score_type ?? null, period: score.period ?? null, tips: score.tips ?? null, published: score.published,
+    score_type: score.score_type ?? null, period: score.period ?? null, score_style: score.score_style ?? null, tips: score.tips ?? null, published: score.published,
     cover_file_id: score.cover_file_id ?? null,
     target_classes: [...new Set(score.target_classes ?? [])].sort(),
     pages: getScorePages(score).map(page => ({ file_id: page.file_id ?? null, image_url: page.file_id ? null : page.image_url ?? null, file_name: page.file_name ?? null, file_type: page.file_type ?? null })),
@@ -29,6 +29,8 @@ export async function GET(request: Request) {
     if (scoreType) query = query.eq('score_type', scoreType)
     if (category) query = query.eq('category', category)
     if (period) query = query.eq('period', period)
+    const scoreStyle = params.get('score_style')
+    if (scoreStyle) query = query.eq('score_style', scoreStyle)
     const { data, error } = await query.order('created_at', { ascending: false })
     dbCheck(error)
     return NextResponse.json(await refreshScoreFiles((data ?? []).filter(score => canReadScore(user, score))))

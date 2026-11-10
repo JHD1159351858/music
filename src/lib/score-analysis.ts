@@ -40,13 +40,12 @@ function text(value: unknown): string | null {
 function midi(pitch: Pitch): number { return (pitch.octave + 1) * 12 + semitones[pitch.step] + pitch.alter }
 function noteName(pitch: Pitch): string { return `${pitch.step}${pitch.alter > 0 ? '♯'.repeat(pitch.alter) : '♭'.repeat(-pitch.alter)}${pitch.octave}` }
 function setMetrics(result: AnalysisResult, pitches: Pitch[]) {
-  if (!pitches.length) return
   if (pitches.some(pitch => midi(pitch) < 0 || midi(pitch) > 127)) throw new Error('音高超出可解析范围')
   const histogram = { C: 0, D: 0, E: 0, F: 0, G: 0, A: 0, B: 0 }
   const sequence = pitches.map((pitch, index) => { histogram[pitch.step]++; return { index: index + 1, midi: midi(pitch), note: noteName(pitch) } })
   const ordered = [...pitches].sort((a, b) => midi(a) - midi(b))
   result.noteCount = pitches.length
-  result.range = `${noteName(ordered[0])} — ${noteName(ordered[ordered.length - 1])}（${midi(ordered[ordered.length - 1]) - midi(ordered[0])}半音）`
+  if (ordered.length) result.range = `${noteName(ordered[0])} — ${noteName(ordered[ordered.length - 1])}（${midi(ordered[ordered.length - 1]) - midi(ordered[0])}半音）`
   result.pitchHistogram = histogram
   result.pitchSequence = sequence
 }

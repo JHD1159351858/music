@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Maximize, Minimize, ZoomIn, ZoomOut } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Score } from '@/lib/teaching-types'
+import { SCORE_PERIODS, SCORE_TYPES, scoreClassificationValue } from '@/lib/score-classification'
 import { getScorePages } from '@/lib/score-pages'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -46,7 +47,7 @@ export function ScorePreview({ score, onClose }: { score: Score; onClose: () => 
   }
   return <Dialog open onOpenChange={(open) => { if (!open) void close() }}>
     <DialogContent ref={container} className={`flex flex-col gap-3 overflow-hidden bg-background p-3 sm:max-w-6xl sm:p-4 xl:p-6 ${fullscreen ? 'inset-0 h-dvh max-w-none! translate-x-0 translate-y-0 rounded-none border-0' : page?.image_url ? 'h-[90dvh]' : 'max-h-[90dvh]'}`}>
-      <DialogHeader className="shrink-0 pr-8"><DialogTitle>{score.title}</DialogTitle><DialogDescription className="max-h-[14dvh] overflow-y-auto">{score.composer} · {score.score_type ?? '类型未设置'} · {score.period ?? '时期未设置'}{score.tips ? ` · ${score.tips}` : ''}</DialogDescription></DialogHeader>
+      <DialogHeader className="shrink-0 pr-8"><DialogTitle>{score.title}</DialogTitle><DialogDescription className="max-h-[14dvh] overflow-y-auto">{score.composer} · {scoreClassificationValue(SCORE_TYPES, score.score_type) ?? '类型未设置'} · {scoreClassificationValue(SCORE_PERIODS, score.period) ?? '时期未设置'}{score.score_style ? ` · 风格 ${score.score_style}` : ''}{score.tips ? ` · ${score.tips}` : ''}</DialogDescription></DialogHeader>
       {page?.image_url ? <>
         <div className="flex shrink-0 flex-wrap items-center gap-2 pointer-coarse:[&_button]:min-h-11 pointer-coarse:[&_button]:min-w-11">
           <ScorePageNavigation index={pageIndex} count={pages.length} onChange={changePage} />

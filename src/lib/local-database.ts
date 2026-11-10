@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS score_genres (
 CREATE TABLE IF NOT EXISTS scores (
   id TEXT PRIMARY KEY, title TEXT NOT NULL, composer TEXT NOT NULL,
   difficulty TEXT NOT NULL CHECK(difficulty IN ('beginner','intermediate','advanced')),
-  score_type TEXT, period TEXT,
+  score_type TEXT, period TEXT, score_style TEXT,
   cover_file_id TEXT,
   category TEXT NOT NULL DEFAULT 'foreign' CHECK(category IN ('domestic','foreign')),
   genre_id TEXT REFERENCES score_genres(id) ON DELETE RESTRICT,
@@ -163,6 +163,7 @@ function openDatabase(file: string): DatabaseSync {
     if (!scoreColumns.some(column => column.name === 'cover_file_id')) db.exec('ALTER TABLE scores ADD COLUMN cover_file_id TEXT')
     if (!scoreColumns.some(column => column.name === 'score_type')) db.exec('ALTER TABLE scores ADD COLUMN score_type TEXT')
     if (!scoreColumns.some(column => column.name === 'period')) db.exec('ALTER TABLE scores ADD COLUMN period TEXT')
+    if (!scoreColumns.some(column => column.name === 'score_style')) db.exec('ALTER TABLE scores ADD COLUMN score_style TEXT')
     if (!scoreColumns.some(column => column.name === 'target_classes')) db.exec("ALTER TABLE scores ADD COLUMN target_classes TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(target_classes))")
     if (!scoreColumns.some(column => column.name === 'pages')) db.exec("ALTER TABLE scores ADD COLUMN pages TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(pages))")
     const mapMusicianColumns = db.prepare('PRAGMA table_info(map_musicians)').all()

@@ -200,9 +200,9 @@ async function seed() {
   const semester = await api('/api/semester-goals', teacher, 'POST', { name: `${year} 秋季钢琴课堂 · 验收示例`, start_date: `${year}-09-01`, end_date: `${year + 1}-01-31`, target_minutes: 900 }, 201)
   const scores = []
   for (const [index, piece] of [
-    { title: '月光奏鸣曲', composer: '贝多芬', category: 'foreign', score_type: '奏鸣曲', period: '古典主义时期' },
-    { title: '降E大调夜曲', composer: '肖邦', category: 'foreign', score_type: '夜曲', period: '浪漫主义时期' },
-    { title: '牧童短笛', composer: '贺绿汀', category: 'domestic', score_type: '弹奏曲', period: '20世纪' },
+    { title: '月光奏鸣曲', composer: '贝多芬', category: 'foreign', score_type: '奏鸣曲', period: '19世纪', score_style: '古典' },
+    { title: '降E大调夜曲', composer: '肖邦', category: 'foreign', score_type: '乐曲', period: '19世纪', score_style: '浪漫' },
+    { title: '牧童短笛', composer: '贺绿汀', category: 'domestic', score_type: '乐曲', period: '20世纪', score_style: '中国' },
   ].entries()) {
     const file = await uploadSheet(index, piece.title)
     const score = await api('/api/scores', teacher, 'POST', { ...piece, tips: '界面验收示例：附带自制合成谱图，并非作品原谱；本数据不代表真实教学成果。', published: true, target_classes: [className], cover_file_id: null, pages: [{ file_id: file.fileId, file_name: file.name, file_type: file.type, upload_receipt: file.receipt }] }, 201)

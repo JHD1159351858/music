@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { SubmissionRequirements } from './teaching-types'
-import { SCORE_PERIOD_MAX_LENGTH, SCORE_TYPES } from './score-classification'
+import { SCORE_PERIODS, SCORE_STYLES, SCORE_TYPES } from './score-classification'
 import { MAX_SCORE_PAGES } from './score-pages'
 
 const id = z.string().trim().min(1).max(100)
@@ -19,7 +19,8 @@ export const scoreSchema = userIdSchema.extend({
   title: text, composer: text,
   category: z.enum(['domestic', 'foreign']),
   score_type: z.enum(SCORE_TYPES).nullable().optional(),
-  period: z.string().trim().min(1).max(SCORE_PERIOD_MAX_LENGTH).nullable().optional(),
+  period: z.enum(SCORE_PERIODS).nullable().optional(),
+  score_style: z.enum(SCORE_STYLES).nullable().optional(),
   tips: nullableText, image_url: nullableUrl,
   file_id: nullableText, file_name: nullableText, file_type: nullableText,
   cover_file_id: z.string().trim().min(1).max(5000).nullable().optional(),

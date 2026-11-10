@@ -6,6 +6,7 @@ import { ArrowLeft, FileMusic, Loader2, Maximize, MicOff, Minimize, Pause, Play,
 import { toast } from 'sonner'
 import { useUser } from '@/lib/user-context'
 import type { Score } from '@/lib/teaching-types'
+import { SCORE_PERIODS, SCORE_TYPES, scoreClassificationValue } from '@/lib/score-classification'
 import { getScorePages } from '@/lib/score-pages'
 import { Button } from '@/components/ui/button'
 import { ChatPanel } from '@/components/chat-panel'
@@ -265,7 +266,7 @@ function PracticeSession() {
         <div className="flex min-w-0 items-center gap-2">
           <Button variant="ghost" size="icon" disabled={saving} onClick={() => setLeaveOpen(true)} aria-label="返回琴谱库" className="pointer-coarse:size-11"><ArrowLeft className="h-5 w-5" /></Button>
           {score && user?.role === 'student' && <ScoreCover score={score} className="concert-practice-cover md:max-xl:landscape:h-10! md:max-xl:landscape:w-8! min-[60rem]:max-lg:landscape:hidden!" />}
-          <div className="min-w-0"><h1 title={score?.title} className="truncate font-serif text-lg font-semibold">{score?.title ?? '正在准备琴谱…'}</h1><p className="truncate text-xs text-muted-foreground">{score?.composer}{score && ` · ${score.score_type ?? '类型未设置'} · ${score.period ?? '时期未设置'}`}{taskId ? ' · 任务练习' : ' · 沉浸练习'}</p></div>
+          <div className="min-w-0"><h1 title={score?.title} className="truncate font-serif text-lg font-semibold">{score?.title ?? '正在准备琴谱…'}</h1><p className="truncate text-xs text-muted-foreground">{score?.composer}{score && ` · ${scoreClassificationValue(SCORE_TYPES, score.score_type) ?? '类型未设置'} · ${scoreClassificationValue(SCORE_PERIODS, score.period) ?? '时期未设置'}`}{score?.score_style ? ` · 风格 ${score.score_style}` : ''}{taskId ? ' · 任务练习' : ' · 沉浸练习'}</p></div>
         </div>
         <div role="toolbar" aria-label="琴谱控制" className={`${scoreTools} col-span-full col-start-1 row-start-2 min-[60rem]:landscape:col-span-1 min-[60rem]:landscape:col-start-2 min-[60rem]:landscape:row-start-1`}>
           {pageControls}{scoreZoomControls}

@@ -7,7 +7,7 @@ import { BookOpen, Check, Clock3, ExternalLink, Eye, FileMusic, ListMusic, Loade
 import { toast } from 'sonner'
 import { useUser } from '@/lib/user-context'
 import type { PracticeRecord, Profile, Score } from '@/lib/teaching-types'
-import { SCORE_TYPES } from '@/lib/score-classification'
+import { SCORE_PERIODS, SCORE_STYLES, SCORE_TYPES, scoreClassificationValue } from '@/lib/score-classification'
 import { getScorePages } from '@/lib/score-pages'
 import { ScoreEditor } from '@/components/practice/score-editor'
 import { ScorePreview } from '@/components/practice/score-preview'
@@ -55,6 +55,7 @@ function PracticeContent() {
   const [category, setCategory] = useState('all')
   const [scoreType, setScoreType] = useState('all')
   const [period, setPeriod] = useState('all')
+  const [scoreStyle, setScoreStyle] = useState('all')
   const [editor, setEditor] = useState<{ score: Score | null } | null>(null)
   const [preview, setPreview] = useState<Score | null>(null)
   const [deleting, setDeleting] = useState<Score | null>(null)
@@ -87,10 +88,10 @@ function PracticeContent() {
   const filtered = useMemo(() => (activeTab === 'queue' ? queue : scores).filter((score) =>
     (activeTab === 'queue' || (activeTab === 'personal' ? score.source === 'student' : score.source !== 'student')) && (category === 'all' || score.category === category) &&
     (scoreType === 'all' || score.score_type === scoreType) && (period === 'all' || score.period === period) &&
+    (scoreStyle === 'all' || score.score_style === scoreStyle) &&
     (!query || `${score.title} ${score.composer}`.toLowerCase().includes(query.trim().toLowerCase()))
-  ), [activeTab, queue, scores, category, scoreType, period, query])
+  ), [activeTab, queue, scores, category, scoreType, period, scoreStyle, query])
   const selectedScore = filtered.find(score => score.id === selectedScoreId) ?? filtered[0] ?? null
-  const periods = [...new Set([...scores, ...queue].map(score => score.period).filter((value): value is string => Boolean(value)))].sort()
 
   const toggleQueue = async (score: Score) => {
     if (!user) return
@@ -143,7 +144,7 @@ function PracticeContent() {
           <p className="text-[11px] tracking-[.2em] text-primary">{selectedScore ? 'SELECTED REPERTOIRE' : 'YOUR MUSIC JOURNEY'}</p>
           <h2 aria-live="polite">{selectedScore?.title ?? '从一首心仪的曲子开始'}</h2>
           <p className="text-sm text-muted-foreground">{selectedScore?.composer ?? '上传个人琴谱，或从曲谱库选择曲目，开始今天的练习。'}</p>
-          {selectedScore && <><div className="mt-4 flex flex-wrap gap-2"><Badge variant="outline">{selectedScore.score_type ?? '类型未设置'}</Badge><Badge variant="outline">{selectedScore.period ?? '时期未设置'}</Badge></div>{selectedScore.tips && <p className="line-clamp-2 max-w-sm text-xs leading-relaxed text-muted-foreground">{selectedScore.tips}</p>}<div className="mt-6 flex flex-wrap gap-2"><Button asChild><Link href={`/practice/session/${selectedScore.id}`}><Play className="size-4" />{isTeacher ? '试练' : '开始练习'}</Link></Button><Button variant="outline" disabled={busyId === selectedScore.id} onClick={() => void toggleQueue(selectedScore)}>{queuedIds.has(selectedScore.id) ? <Check className="size-4" /> : <Plus className="size-4" />}{queuedIds.has(selectedScore.id) ? '移出列表' : '我要练'}</Button><Button variant="ghost" onClick={() => setPreview(selectedScore)} aria-label={`查看选中曲目${selectedScore.title}琴谱`}><Eye className="size-4" /><span className="sr-only">查看琴谱</span></Button></div></>}
+          {selectedScore && <><div className="mt-4 flex flex-wrap gap-2"><Badge variant="outline">{scoreClassificationValue(SCORE_TYPES, selectedScore.score_type) ?? '类型未设置'}</Badge><Badge variant="outline">{scoreClassificationValue(SCORE_PERIODS, selectedScore.period) ?? '时期未设置'}</Badge><Badge variant="outline">{selectedScore.score_style ? `风格 · ${selectedScore.score_style}` : '风格未设置'}</Badge></div>{selectedScore.tips && <p className="line-clamp-2 max-w-sm text-xs leading-relaxed text-muted-foreground">{selectedScore.tips}</p>}<div className="mt-6 flex flex-wrap gap-2"><Button asChild><Link href={`/practice/session/${selectedScore.id}`}><Play className="size-4" />{isTeacher ? '试练' : '开始练习'}</Link></Button><Button variant="outline" disabled={busyId === selectedScore.id} onClick={() => void toggleQueue(selectedScore)}>{queuedIds.has(selectedScore.id) ? <Check className="size-4" /> : <Plus className="size-4" />}{queuedIds.has(selectedScore.id) ? '移出列表' : '我要练'}</Button><Button variant="ghost" onClick={() => setPreview(selectedScore)} aria-label={`查看选中曲目${selectedScore.title}琴谱`}><Eye className="size-4" /><span className="sr-only">查看琴谱</span></Button></div></>}
         </div>
         {selectedScore && <div className="repertoire-hero-cover-title" aria-hidden><strong>{selectedScore.title}</strong><span>{selectedScore.composer}</span></div>}
       </section>}
@@ -155,7 +156,8 @@ function PracticeContent() {
             <div className="relative min-w-44 flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索曲名或作曲家" className="pl-9" /></div>
             <Select value={category} onValueChange={setCategory}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部分类</SelectItem><SelectItem value="domestic">国内</SelectItem><SelectItem value="foreign">国外</SelectItem></SelectContent></Select>
             <Select value={scoreType} onValueChange={setScoreType}><SelectTrigger aria-label="类型筛选" className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部类型</SelectItem>{SCORE_TYPES.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select>
-            <Select value={period} onValueChange={setPeriod}><SelectTrigger aria-label="时期筛选" className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部时期</SelectItem>{periods.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
+            <Select value={period} onValueChange={setPeriod}><SelectTrigger aria-label="时期筛选" className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部时期</SelectItem>{SCORE_PERIODS.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
+            <Select value={scoreStyle} onValueChange={setScoreStyle}><SelectTrigger aria-label="风格筛选" className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部风格</SelectItem>{SCORE_STYLES.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
           </div>}
           {['library', 'queue', ...(!isTeacher ? ['personal'] : [])].map((tab) => <TabsContent key={tab} value={tab} className="min-w-0">
             {tab === 'personal' && <p className="mb-4 text-sm text-muted-foreground">个人上传仅本人可见，上传后自动加入「我要练」。</p>}
@@ -169,7 +171,7 @@ function PracticeContent() {
                   {getScorePages(score).length > 1 && <Badge variant="secondary" className="absolute bottom-3 left-3">{getScorePages(score).length} 页琴谱</Badge>}
                 </button>
                 <div className="repertoire-card-body">
-                  <div className="mb-3 flex flex-wrap gap-2"><Badge variant="secondary">{CATEGORY[score.category] ?? '待分类'}</Badge><Badge variant="outline" className="border-primary/30 text-primary">{score.score_type ?? '类型未设置'}</Badge><Badge variant="secondary">{score.period ?? '时期未设置'}</Badge></div>
+                  <div className="mb-3 flex flex-wrap gap-2"><Badge variant="secondary">{CATEGORY[score.category] ?? '待分类'}</Badge><Badge variant="outline" className="border-primary/30 text-primary">{scoreClassificationValue(SCORE_TYPES, score.score_type) ?? '类型未设置'}</Badge><Badge variant="secondary">{scoreClassificationValue(SCORE_PERIODS, score.period) ?? '时期未设置'}</Badge><Badge variant="secondary">{score.score_style ? `风格 · ${score.score_style}` : '风格未设置'}</Badge></div>
                   <h2 className="font-serif text-xl font-medium text-foreground">{score.title}</h2><p className="mt-1 text-sm text-muted-foreground">{score.composer}</p>
                   {isTeacher && <p className="mt-2 text-xs text-muted-foreground">发布范围：{score.target_classes?.length ? score.target_classes.join('、') : '全部班级'}</p>}
                   {score.tips && <p className="mt-4 line-clamp-2 border-l-2 border-primary/40 pl-3 text-xs leading-relaxed text-muted-foreground">{score.tips}</p>}

@@ -87,13 +87,13 @@ test('legacy scores gain unset classification fields without changing old values
   await client.from('practice_list').insert({ user_id: student, score_id: 'legacy-classification' })
   const legacy = new DatabaseSync(localDatabasePath())
   const columns = legacy.prepare('PRAGMA table_info(scores)').all()
-  for (const name of ['score_type', 'period']) if (columns.some(column => column.name === name)) legacy.exec(`ALTER TABLE scores DROP COLUMN ${name}`)
+  for (const name of ['score_type', 'period', 'score_style']) if (columns.some(column => column.name === name)) legacy.exec(`ALTER TABLE scores DROP COLUMN ${name}`)
   legacy.close()
   for (let opening = 0; opening < 2; opening++) {
     const reopened = createLocalDatabaseClient()
-    const migrated = await reopened.from('scores').select('id,difficulty,genre_id,category,published,target_classes,file_id,pages,score_type,period').eq('id', 'legacy-classification').single()
+    const migrated = await reopened.from('scores').select('id,difficulty,genre_id,category,published,target_classes,file_id,pages,score_type,period,score_style').eq('id', 'legacy-classification').single()
     assert.equal(migrated.error, null)
-    assert.deepEqual(migrated.data, { id: 'legacy-classification', difficulty: 'advanced', genre_id: 'legacy-genre', category: 'domestic', published: true, target_classes: ['钢琴一班'], file_id: 'old-file', pages: [{ file_id: 'old-file' }], score_type: null, period: null })
+    assert.deepEqual(migrated.data, { id: 'legacy-classification', difficulty: 'advanced', genre_id: 'legacy-genre', category: 'domestic', published: true, target_classes: ['钢琴一班'], file_id: 'old-file', pages: [{ file_id: 'old-file' }], score_type: null, period: null, score_style: null })
     assert.equal((await reopened.from('practice_list').select('id', { count: 'exact', head: true })).count, 1)
   }
 })

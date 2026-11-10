@@ -6,7 +6,7 @@ import { ChevronDown, ChevronUp, Eye, FileMusic, MoreHorizontal, Pencil, Search,
 import { toast } from 'sonner'
 import { useRequireUser } from '@/lib/user-context'
 import type { Profile, Score } from '@/lib/teaching-types'
-import { SCORE_TYPES } from '@/lib/score-classification'
+import { SCORE_PERIODS, SCORE_STYLES, SCORE_TYPES, scoreClassificationValue } from '@/lib/score-classification'
 import { ScoreEditor } from '@/components/practice/score-editor'
 import { ScorePreview } from '@/components/practice/score-preview'
 import { ScoreCover } from '@/components/practice/score-cover'
@@ -37,6 +37,7 @@ function ScoreManagementContent() {
   const [category, setCategory] = useState('all')
   const [scoreType, setScoreType] = useState('all')
   const [period, setPeriod] = useState('all')
+  const [scoreStyle, setScoreStyle] = useState('all')
   const [publication, setPublication] = useState('all')
   const [editor, setEditor] = useState<{ score: Score; revision: number } | null>(null)
   const [uploadOpen, setUploadOpen] = useState(false)
@@ -75,9 +76,9 @@ function ScoreManagementContent() {
     (category === 'all' || score.category === category) &&
     (scoreType === 'all' || score.score_type === scoreType) &&
     (period === 'all' || score.period === period) &&
+    (scoreStyle === 'all' || score.score_style === scoreStyle) &&
     (publication === 'all' || score.published === (publication === 'published'))
-  ), [scores, query, category, scoreType, period, publication])
-  const periods = [...new Set(scores.map(score => score.period).filter((value): value is string => Boolean(value)))].sort()
+  ), [scores, query, category, scoreType, period, scoreStyle, publication])
 
   function selectScore(score: Score) {
     if (editorSaving) return
@@ -117,7 +118,7 @@ function ScoreManagementContent() {
 
   const columns: AdminColumn<Score>[] = [
     { key: 'title', label: '曲目 / 作曲家', render: score => <button type="button" data-score-selected={editor?.score.id === score.id} aria-label={`编辑琴谱${score.title}`} aria-pressed={editor?.score.id === score.id} disabled={editorSaving} onClick={() => selectScore(score)} className="flex min-w-36 max-w-60 items-center gap-3 rounded-md text-left outline-offset-4 focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-60"><div className="size-11 shrink-0 overflow-hidden rounded-md border border-border bg-muted"><ScoreCover score={score} /></div><div className="min-w-0"><p className="truncate font-medium">{score.title}</p><p className="mt-1 truncate text-xs text-muted-foreground">{score.composer}</p><p className="mt-1 hidden text-[10px] text-muted-foreground 2xl:block">上传于 {teachingDate(score.created_at)}</p></div></button> },
-    { key: 'category', label: '类型 / 时期', render: score => <div className="min-w-20 text-xs leading-5"><p>{categories[score.category]} · {score.score_type ?? '类型未设置'}</p><p className="text-muted-foreground">{score.period ?? '时期未设置'}</p></div> },
+    { key: 'category', label: '类型 / 时期 / 风格', render: score => <div className="min-w-20 text-xs leading-5"><p>{categories[score.category]} · {scoreClassificationValue(SCORE_TYPES, score.score_type) ?? '类型未设置'}</p><p className="text-muted-foreground">{scoreClassificationValue(SCORE_PERIODS, score.period) ?? '时期未设置'} · {score.score_style ? `风格 ${score.score_style}` : '风格未设置'}</p></div> },
     { key: 'published', label: '发布状态', render: score => <Badge variant={score.published ? 'default' : 'secondary'}>{score.published ? '已发布' : '未发布'}</Badge> },
     { key: 'classes', label: '可见班级', render: score => <span className="inline-block min-w-16 max-w-28 text-xs leading-5">{score.target_classes?.length ? score.target_classes.join('、') : '全部班级'}</span> },
     { key: 'actions', label: '操作', render: score => <div className="flex items-center gap-0.5"><Button size="icon" variant="ghost" aria-label={`编辑${score.title}`} disabled={editorSaving || busyId === score.id} onClick={() => selectScore(score)}><Pencil className="size-3.5" /></Button><DropdownMenu><DropdownMenuTrigger asChild><Button size="icon" variant="ghost" aria-label={`${score.title}的更多操作`} disabled={editorSaving || busyId === score.id}><MoreHorizontal className="size-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => setPreview(score)}><Eye className="size-4" />查看琴谱</DropdownMenuItem><DropdownMenuItem onSelect={() => void changePublication(score)}>{score.published ? '取消发布' : '发布琴谱'}</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" onSelect={() => setDeleting(score)}><Trash2 className="size-4" />删除琴谱</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div> },
@@ -130,7 +131,8 @@ function ScoreManagementContent() {
       <div className="relative min-w-52 flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input aria-label="搜索曲名或作曲家" className="pl-9" placeholder="搜索曲名或作曲家" value={query} onChange={event => setQuery(event.target.value)} /></div>
       <Select value={category} onValueChange={setCategory}><SelectTrigger aria-label="分类筛选" className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部分类</SelectItem><SelectItem value="domestic">国内</SelectItem><SelectItem value="foreign">国外</SelectItem></SelectContent></Select>
       <Select value={scoreType} onValueChange={setScoreType}><SelectTrigger aria-label="类型筛选" className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部类型</SelectItem>{SCORE_TYPES.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select>
-      <Select value={period} onValueChange={setPeriod}><SelectTrigger aria-label="时期筛选" className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部时期</SelectItem>{periods.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
+      <Select value={period} onValueChange={setPeriod}><SelectTrigger aria-label="时期筛选" className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部时期</SelectItem>{SCORE_PERIODS.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
+      <Select value={scoreStyle} onValueChange={setScoreStyle}><SelectTrigger aria-label="风格筛选" className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部风格</SelectItem>{SCORE_STYLES.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
       <Select value={publication} onValueChange={setPublication}><SelectTrigger aria-label="发布状态筛选" className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部发布状态</SelectItem><SelectItem value="published">已发布</SelectItem><SelectItem value="unpublished">未发布</SelectItem></SelectContent></Select>
     </div>
     <div className={styles.workspace}>

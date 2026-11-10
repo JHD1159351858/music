@@ -179,44 +179,76 @@ test('a saved cover removal reports cleanup failure without failing or repeating
   assert.deepEqual((await createLocalDatabaseClient().from('scores').select('cover_file_id').eq('id', created.id).single()).data, { cover_file_id: null })
 })
 
-test('teacher classification saves and publishes without legacy difficulty or genre and filters by type and period', async () => {
+test('teacher classification saves and filters by type, period and independent style', async () => {
   createLocalDatabaseClient()
   const page = await pageFile(teacher)
-  const body = { id: 'b0000000-0000-4000-8000-000000000001', user_id: teacher, title: '新分类琴谱', composer: '作曲家', category: 'foreign', score_type: '协奏曲', period: '18世纪', published: true, target_classes: ['钢琴一班'], pages: [page] }
+  const body = { id: 'b0000000-0000-4000-8000-000000000001', user_id: teacher, title: '新分类琴谱', composer: '作曲家', category: 'foreign', score_type: '奏鸣曲', period: '18世纪', score_style: '古典', published: true, target_classes: ['钢琴一班'], pages: [page] }
   const response = await createScore(await request('/api/scores', teacher, body))
   assert.equal(response.status, 201, await response.clone().text())
   const created = await response.json() as Record<string, unknown>
-  assert.equal(created.score_type, '协奏曲')
+  assert.equal(created.score_type, '奏鸣曲')
   assert.equal(created.period, '18世纪')
+  assert.equal(created.score_style, '古典')
   assert.equal(created.published, true)
   assert.deepEqual(created.target_classes, ['钢琴一班'])
   assert.equal((await createScore(await request('/api/scores', teacher, body))).status, 200)
-  for (const changed of [{ score_type: '夜曲' }, { period: '浪漫主义时期' }]) {
+  for (const changed of [{ score_type: '练习曲' }, { period: '19世纪' }, { score_style: '浪漫' }]) {
     assert.equal((await createScore(await request('/api/scores', teacher, { ...body, ...changed }))).status, 409)
   }
-  for (const query of ['score_type=夜曲', 'period=19世纪']) {
+  for (const query of ['score_type=练习曲', 'period=19世纪', 'score_style=浪漫']) {
     assert.deepEqual(await (await listScores(await request(`/api/scores?${query}`, teacher))).json(), [])
   }
-  const matches = await (await listScores(await request('/api/scores?score_type=协奏曲&period=18世纪', teacher))).json() as Array<{ id: string }>
+  const matches = await (await listScores(await request('/api/scores?score_type=奏鸣曲&period=18世纪&score_style=古典', teacher))).json() as Array<{ id: string }>
   assert.deepEqual(matches.map(score => score.id), [body.id])
   const db = createLocalDatabaseClient()
   await db.from('scores').update({ difficulty: 'advanced' }).eq('id', body.id)
   const patched = await editScore(await request(`/api/scores/${body.id}`, teacher, { user_id: teacher, title: '修改曲名', difficulty: 'beginner', genre_id: 'unused' }), context(body.id))
   assert.equal(patched.status, 200, await patched.clone().text())
   const updated = await patched.json() as Record<string, unknown>
-  assert.equal(updated.score_type, '协奏曲')
+  assert.equal(updated.score_type, '奏鸣曲')
   assert.equal(updated.period, '18世纪')
+  assert.equal(updated.score_style, '古典')
   assert.equal(updated.difficulty, 'advanced')
   assert.deepEqual(updated.target_classes, ['钢琴一班'])
+  for (const scoreStyle of ['巴洛克', null]) {
+    const result = await editScore(await request(`/api/scores/${body.id}`, teacher, { user_id: teacher, score_style: scoreStyle }), context(body.id))
+    assert.equal(result.status, 200, await result.clone().text())
+    const edited = await result.json() as TeachingScore
+    assert.equal(edited.score_style, scoreStyle)
+    assert.equal(edited.period, '18世纪')
+    assert.equal(edited.score_type, '奏鸣曲')
+  }
 })
 
-test('score classification rejects unknown types and periods over the length limit', async () => {
+test('new score classification rejects values outside the exact option sets', async () => {
   createLocalDatabaseClient()
   const page = await pageFile(teacher)
   const body = { user_id: teacher, title: '分类校验', composer: '作曲家', category: 'foreign', difficulty: 'beginner', pages: [page] }
-  for (const fields of [{ score_type: '未定义类型' }, { period: '时'.repeat(101) }]) {
+  for (const fields of [{ score_type: '协奏曲' }, { period: '浪漫主义时期' }, { score_style: '古典主义' }]) {
     assert.equal((await createScore(await request('/api/scores', teacher, { ...body, ...fields }))).status, 400)
   }
+})
+
+test('editing a legacy score preserves its old classification until explicitly replaced', async () => {
+  const db = createLocalDatabaseClient()
+  const file = await pageFile(teacher)
+  const id = 'b0000000-0000-4000-8000-000000000002'
+  const score = await db.from('scores').insert({ id, title: '旧琴谱', composer: '作曲家', category: 'foreign', source: 'teacher', owner_id: teacher, difficulty: 'advanced', score_type: '夜曲', period: '浪漫主义时期', ...file, pages: [file] })
+  assert.equal(score.error, null)
+  const saved = await editScore(await request(`/api/scores/${id}`, teacher, { user_id: teacher, title: '修改旧谱曲名' }), context(id))
+  assert.equal(saved.status, 200, await saved.clone().text())
+  const old = await saved.json() as TeachingScore & { difficulty: string }
+  assert.equal(old.score_type, '夜曲')
+  assert.equal(old.period, '浪漫主义时期')
+  assert.equal(old.score_style, null)
+  assert.equal(old.file_id, file.file_id)
+  assert.equal(old.difficulty, 'advanced')
+  const replaced = await editScore(await request(`/api/scores/${id}`, teacher, { user_id: teacher, score_type: '乐曲', period: '19世纪', score_style: '浪漫' }), context(id))
+  assert.equal(replaced.status, 200, await replaced.clone().text())
+  const current = await replaced.json() as TeachingScore
+  assert.equal(current.score_type, '乐曲')
+  assert.equal(current.period, '19世纪')
+  assert.equal(current.score_style, '浪漫')
 })
 
 test('student personal uploads stay private, are queued, editable and deletable only by owner', async () => {

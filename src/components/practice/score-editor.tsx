@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, Check, FileMusic, Loader2, Upload, X } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Score } from '@/lib/teaching-types'
-import { SCORE_PERIOD_MAX_LENGTH, SCORE_TYPES } from '@/lib/score-classification'
+import { SCORE_PERIODS, SCORE_STYLES, SCORE_TYPES, scoreClassificationValue, type ScorePeriod, type ScoreStyle, type ScoreType } from '@/lib/score-classification'
 import type { Classroom } from '@/lib/class-types'
 import { getScorePages, MAX_SCORE_PAGES } from '@/lib/score-pages'
 import { uploadScorePages, type ScoreUploadPage, type UploadedScoreFile } from './score-upload'
@@ -28,8 +28,9 @@ interface Draft {
   title: string
   composer: string
   category: Score['category'] | ''
-  score_type: Score['score_type'] | ''
-  period: string
+  score_type?: ScoreType | null
+  period?: ScorePeriod | null
+  score_style?: ScoreStyle | null
   tips: string
   published: boolean
   target_classes: string[]
@@ -45,7 +46,7 @@ function makeDraft(files: File[], title = files[0].name.replace(/\.[^.]+$/, ''))
   return {
     id: crypto.randomUUID(), pages: files.map(makePage), title, composer: '',
     cover_file: null, cover: null,
-    category: '', score_type: '', period: '', tips: '', published: false, target_classes: [], status: 'pending', error: '',
+    category: '', tips: '', published: false, target_classes: [], status: 'pending', error: '',
   }
 }
 
@@ -73,7 +74,7 @@ export function ScoreEditor({ userId, score, isTeacher, classNames, onClose, onS
     id: score.id,
     pages: getScorePages(score).map((page, index) => ({ id: `${score.id}-${index}`, file: null, uploaded: { fileId: page.file_id ?? '', url: page.image_url ?? '', name: page.file_name ?? `原琴谱第 ${index + 1} 页`, type: page.file_type ?? '' } })),
     cover_file: null, cover: score.cover_file_id ? { fileId: score.cover_file_id, url: score.cover_url ?? '', name: '当前曲目封面', type: '' } : null,
-    title: score.title, composer: score.composer, category: score.category ?? '', score_type: score.score_type ?? '', period: score.period ?? '',
+    title: score.title, composer: score.composer, category: score.category ?? '',
     tips: score.tips ?? '', published: score.published, target_classes: score.target_classes ?? [], status: 'pending', error: '',
   }] : [])
   const [uploadMode, setUploadMode] = useState('grouped')
@@ -121,8 +122,9 @@ export function ScoreEditor({ userId, score, isTeacher, classNames, onClose, onS
     <div className="space-y-2"><Label htmlFor={`title-${draft.id}`}>曲名 *</Label><Input id={`title-${draft.id}`} value={draft.title} onChange={(e) => update(draft.id, { title: e.target.value })} /></div>
     <div className="space-y-2"><Label htmlFor={`composer-${draft.id}`}>作曲家 *</Label><Input id={`composer-${draft.id}`} value={draft.composer} onChange={(e) => update(draft.id, { composer: e.target.value })} /></div>
     <div className="space-y-2"><Label>分类 *</Label><Select value={draft.category} onValueChange={(v: Score['category']) => update(draft.id, { category: v })}><SelectTrigger className="w-full"><SelectValue placeholder="选择国内 / 国外" /></SelectTrigger><SelectContent><SelectItem value="domestic">国内</SelectItem><SelectItem value="foreign">国外</SelectItem></SelectContent></Select></div>
-    <div className="space-y-2"><Label htmlFor={`score-type-${draft.id}`}>类型（选填）</Label><Select value={draft.score_type || 'none'} onValueChange={(value) => update(draft.id, { score_type: value === 'none' ? '' : value as NonNullable<Score['score_type']> })}><SelectTrigger id={`score-type-${draft.id}`} className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">未设置</SelectItem>{SCORE_TYPES.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select></div>
-    <div className="space-y-2 sm:col-span-2"><Label htmlFor={`period-${draft.id}`}>时期（选填）</Label><Input id={`period-${draft.id}`} maxLength={SCORE_PERIOD_MAX_LENGTH} value={draft.period} onChange={event => update(draft.id, { period: event.target.value })} placeholder="如：18世纪、古典主义时期" /></div>
+    <div className="space-y-2"><Label htmlFor={`score-type-${draft.id}`}>类型（选填）</Label><Select value={(draft.score_type === undefined ? scoreClassificationValue(SCORE_TYPES, score?.score_type) : draft.score_type) ?? 'none'} onValueChange={value => update(draft.id, { score_type: scoreClassificationValue(SCORE_TYPES, value) })}><SelectTrigger id={`score-type-${draft.id}`} className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">未设置</SelectItem>{SCORE_TYPES.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select></div>
+    <div className="space-y-2"><Label htmlFor={`period-${draft.id}`}>时期（选填）</Label><Select value={(draft.period === undefined ? scoreClassificationValue(SCORE_PERIODS, score?.period) : draft.period) ?? 'none'} onValueChange={value => update(draft.id, { period: scoreClassificationValue(SCORE_PERIODS, value) })}><SelectTrigger id={`period-${draft.id}`} className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">未设置</SelectItem>{SCORE_PERIODS.map(period => <SelectItem key={period} value={period}>{period}</SelectItem>)}</SelectContent></Select></div>
+    <div className="space-y-2"><Label htmlFor={`score-style-${draft.id}`}>风格（选填）</Label><Select value={(draft.score_style === undefined ? scoreClassificationValue(SCORE_STYLES, score?.score_style) : draft.score_style) ?? 'none'} onValueChange={value => update(draft.id, { score_style: scoreClassificationValue(SCORE_STYLES, value) })}><SelectTrigger id={`score-style-${draft.id}`} className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">未设置</SelectItem>{SCORE_STYLES.map(style => <SelectItem key={style} value={style}>{style}</SelectItem>)}</SelectContent></Select></div>
   </div>
 
   const changePages = (id: string, change: (pages: ScoreUploadPage[]) => ScoreUploadPage[]) => setDrafts((all) => all.map((draft) => draft.id === id ? { ...draft, pages: change(draft.pages), status: 'pending', error: '' } : draft))
@@ -245,7 +247,7 @@ export function ScoreEditor({ userId, score, isTeacher, classNames, onClose, onS
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: draft.id, user_id: userId, title: draft.title.trim(), composer: draft.composer.trim(),
-            category: draft.category, score_type: draft.score_type || null, period: draft.period.trim() || null,
+            category: draft.category, score_type: draft.score_type, period: draft.period, score_style: draft.score_style,
             cover_file_id: cover?.fileId || null, cover_receipt: cover?.receipt,
             tips: draft.tips.trim() || null, published: isTeacher && draft.published, target_classes: isTeacher ? draft.target_classes : [],
             image_url: uploaded?.fileId ? null : uploaded?.url, file_id: uploaded?.fileId || null, file_name: uploaded?.name, file_type: uploaded?.type,

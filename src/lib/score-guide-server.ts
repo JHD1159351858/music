@@ -1,13 +1,22 @@
 import { Config, SearchClient, type SearchItem } from 'coder-coding-dev-sdk'
 import type { AnalysisResult } from './score-analysis'
 import { baselineScoreGuide, identity, type GuideEntry, type GuideField, type GuideSource, type ScoreGuide } from './score-guide'
+import { saveHistoryGuide } from './analysis-history'
+import type { TeachingClient } from './teaching-server'
 
 type PublicFields = Partial<Record<Exclude<GuideField, 'melody'>, GuideEntry>>
 const publicEntry = (text: string, source: GuideSource): GuideEntry => ({ kind: 'public', text, source })
 
-const publicReferences: Array<{ title: string; composer: string; fields: PublicFields }> = [{
-  title: 'Prelude to a Tragedy',
-  composer: 'Lee Actor',
+const beethovenWork = {
+  title: '贝多芬故居 · WoO 123 作品目录',
+  url: 'https://www.beethoven.de/de/work/view/6474881529020416/%22Z%C3%A4rtliche%2BLiebe%22%2C%2BLied%2Bf%C3%BCr%2BSingstimme%2Bund%2BKlavier%2BWoO%2B123',
+}
+
+export const beethovenNames = ['Ludwig van Beethoven', 'L. van Beethoven', 'Beethoven', '贝多芬', '路德维希·范·贝多芬']
+export const tenderLoveTitles = ['Ich liebe dich', 'Zärtliche Liebe', 'Ich liebe dich (Zärtliche Liebe)', 'Ich liebe dich, so wie du mich', 'Ich liebe dich, WoO 123', 'Zärtliche Liebe, WoO 123', '我爱你', '温柔的爱']
+const publicReferences: Array<{ titles: string[]; composers: string[]; fields: PublicFields }> = [{
+  titles: ['Prelude to a Tragedy'],
+  composers: ['Lee Actor'],
   fields: {
     workBackground: publicEntry('这首管弦乐作品由帕洛阿尔托爱乐乐团委约，该团于 2004 年 4 月首演，由作曲家本人指挥。', {
       title: 'Lee Actor 官网 · 作品目录', url: 'https://www.leeactor.com/works.htm',
@@ -18,7 +27,37 @@ const publicReferences: Array<{ title: string; composer: string; fields: PublicF
     creationYear: publicEntry('2003 年', { title: 'Lee Actor 官网 · 作品目录', url: 'https://www.leeactor.com/works.htm' }),
     period: publicEntry('21 世纪初（按作品目录的创作年份划分）', { title: 'Lee Actor 官网 · 作品目录', url: 'https://www.leeactor.com/works.htm' }),
   },
+}, {
+  titles: tenderLoveTitles,
+  composers: beethovenNames,
+  fields: {
+    workBackground: publicEntry('《我爱你》又名《温柔的爱》（Zärtliche Liebe），WoO 123，是为人声与钢琴写作的歌曲，歌词出自卡尔·弗里德里希·威廉·赫罗泽的诗。', beethovenWork),
+    composerBackground: publicEntry('路德维希·范·贝多芬出生于波恩，1792 年后定居维也纳。他在维也纳发展了作曲和钢琴演奏事业。', {
+      title: '贝多芬故居 · 作曲家生平', url: 'https://www.beethoven.de/en/beethoven',
+    }),
+    creationYear: publicEntry('约 1795 年。', beethovenWork),
+    period: publicEntry('18 世纪末，属于贝多芬早期的维也纳创作阶段。', {
+      title: '贝多芬故居 · 维也纳时期年表', url: 'https://www.beethoven.de/en/g/zeittafel-beethoven-in-wien',
+    }),
+  },
 }]
+
+export function normalizedComposer(name: string) {
+  return name.replace(/\s*[（(]\s*\d{4}\s*[-–—−至]\s*\d{4}\s*[)）]\s*$/, '').trim()
+}
+
+function addCuratedGuide(guide: ScoreGuide, title: string, composer: string) {
+  const reference = publicReferences.find(entry =>
+    entry.titles.some(value => identity(value) === identity(title)) &&
+    entry.composers.some(value => identity(value) === identity(composer)),
+  )
+  if (!reference) return guide
+  const additions = (Object.keys(reference.fields) as Array<keyof PublicFields>).filter(field => !guide.fields[field])
+  if (!additions.length) return guide
+  const fields = { ...guide.fields }
+  for (const field of additions) fields[field] = reference.fields[field] ?? null
+  return { ...guide, fields, publicStatus: 'checked' as const }
+}
 
 const hasIdentity = (text: string, term: string) => ` ${identity(text)} `.includes(` ${term} `)
 const publishers = ['boosey.com', 'schott-music.com', 'universaledition.com', 'wise-music-classical.com']
@@ -85,10 +124,10 @@ export function guideFromSearchResults(items: SearchItem[], title: string, compo
 }
 
 export async function completeScoreGuide(result: AnalysisResult): Promise<ScoreGuide> {
-  const { fields } = result.scoreGuide ?? baselineScoreGuide(result)
-  const guide: ScoreGuide = { fields: { ...fields }, publicStatus: 'checked' }
-  const title = result.title?.slice(0, 160)
-  const composer = result.composer?.slice(0, 160)
+  const title = result.title?.slice(0, 160) ?? ''
+  const composer = normalizedComposer(result.composer?.slice(0, 160) ?? '')
+  const baseline = addCuratedGuide(result.scoreGuide ?? baselineScoreGuide(result), title, composer)
+  const guide: ScoreGuide = { fields: { ...baseline.fields }, publicStatus: 'checked' }
   if (!title || !composer || !identity(title) || !identity(composer)) return guide
 
   const merge = (references: PublicFields) => {
@@ -96,8 +135,6 @@ export async function completeScoreGuide(result: AnalysisResult): Promise<ScoreG
       guide.fields[field] ??= references[field] ?? null
     }
   }
-  const reference = publicReferences.find(entry => identity(entry.title) === identity(title) && identity(entry.composer) === identity(composer))
-  if (reference) merge(reference.fields)
   if (guide.fields.workBackground && guide.fields.composerBackground && guide.fields.creationYear && guide.fields.period) return guide
 
   try {
@@ -111,4 +148,30 @@ export async function completeScoreGuide(result: AnalysisResult): Promise<ScoreG
     guide.publicStatus = 'unavailable'
   }
   return guide
+}
+
+const inFlight = new Map<string, Promise<ScoreGuide>>()
+
+export async function completeHistoryScoreGuide(
+  client: TeachingClient,
+  ownerId: string,
+  result: AnalysisResult & { historyId: string },
+  retryUnavailable = true,
+) {
+  const previous = result.scoreGuide
+  if (previous && (previous.publicStatus === 'checked' || (!retryUnavailable && previous.publicStatus === 'unavailable'))) {
+    const guide = addCuratedGuide(previous, result.title ?? '', normalizedComposer(result.composer ?? ''))
+    if (guide !== previous) await saveHistoryGuide(client, ownerId, result, guide)
+    return guide
+  }
+  const key = `${ownerId}:${result.historyId}`
+  let pending = inFlight.get(key)
+  if (!pending) {
+    pending = completeScoreGuide(result).then(async guide => {
+      await saveHistoryGuide(client, ownerId, result, guide)
+      return guide
+    }).finally(() => inFlight.delete(key))
+    inFlight.set(key, pending)
+  }
+  return pending
 }
